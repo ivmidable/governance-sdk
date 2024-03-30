@@ -200,4 +200,19 @@ export class PdaClient {
 
         return {publicKey: pda[0], bump: pda[1]};
     }
+    
+    requiredSignatoryAccount(
+        {governanceAccount, signatory}:
+        {governanceAccount: PublicKey, signatory: PublicKey}
+    ) {
+        const pda = PublicKey.findProgramAddressSync([
+            Buffer.from("required-signatory"), 
+            governanceAccount.toBuffer(),
+            signatory.toBuffer(),
+        ],
+            this.programId
+        )
+
+        return {publicKey: pda[0], bump: pda[1]};
+    }
 }

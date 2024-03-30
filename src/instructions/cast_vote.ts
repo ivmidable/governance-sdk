@@ -33,7 +33,7 @@ export default async function _castVoteContext(
         governanceAuthority,
         governingTokenMint,
         payer,
-        voterWeightRecord: voterTokenOwnerRecord ?? null,
+        voterWeightRecord: voterWeightRecord ?? null,
         maxVoterWeightRecord: maxVoterWeightRecord ?? null,
         realmConfigAccount: realmConfig,
         proposalVoteRecord: voteRecordAccount

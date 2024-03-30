@@ -20,6 +20,8 @@ export type VoteType = {
     multiChoiceOptions: multiChoiceOptionsType | null
 }
 
+export type SetRealmAuthorityAction = IdlTypes<GovernanceIdl>["SetRealmAuthorityAction"];
+export type RealmConfigArgs = IdlTypes<GovernanceIdl>["RealmConfigArgs"];
 export type InstructionData = IdlTypes<GovernanceIdl>["InstructionData"];
 export type Vote = IdlTypes<GovernanceIdl>["Vote"];
 export type GovernanceConfig = IdlTypes<GovernanceIdl>["GovernanceConfig"];

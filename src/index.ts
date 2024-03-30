@@ -1,10 +1,10 @@
-import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, clusterApiUrl} from "@solana/web3.js";
+import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, clusterApiUrl, AccountMeta} from "@solana/web3.js";
 import {Program, Wallet, AnchorProvider, BN} from "@coral-xyz/anchor";
 import {GovernanceIdl} from "./idl/idl";
 import idl from "./idl/gov.json";
 import { DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
-import { GovernanceAccount, GovernanceConfig, MintMaxVoteWeightSource, RealmV2, TokenOwnerRecord, Vote, VoteType } from "./types";
+import { GovernanceAccount, GovernanceConfig, MintMaxVoteWeightSource, RealmConfigArgs, RealmV2, TokenOwnerRecord, Vote, VoteType } from "./types";
 import * as govInstructions from "./instructions";
 import deserialize from "./account";
 import _broadcastTransaction from "./rpc";
@@ -63,6 +63,28 @@ export class Governance {
             throw Error("Couldn't find the account.");
         }
         return deserialize('governanceV2', account.data);
+    }
+
+    async getTokenOwnerRecords(realm: PublicKey){
+        const accounts = await this.connection.getProgramAccounts(this.programId, {
+            filters: [
+                {
+                    memcmp: {
+                        offset: 0,
+                        bytes: "J"
+                    }
+                }, {
+                    memcmp: {
+                        offset: 1,
+                        bytes: realm.toBase58()
+                    }
+                }
+            ]
+        })
+
+        const tors = accounts.map(acc => deserialize('tokenOwnerRecordV2', acc.account.data))
+
+        return tors
     }
 }
 
@@ -171,7 +193,7 @@ export class Instructions {
     /**
      * Construct a SetGovernanceDelegate Instruction
      *
-     * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_own)
+     * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
      * @param currentDelegateOrOwner Current Governance Delegate or Governing Token owner 
      * @param newGovernanceDelegate New Governance Delegate
      * 
@@ -420,7 +442,7 @@ export class Instructions {
         )
     }
 
-     /**
+    /**
      * Construct a FinalizeVote instruction
      *
      * @param realmAccount The Realm Account
@@ -443,6 +465,232 @@ export class Instructions {
         return await govInstructions._finalizeVoteContext(
             realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governingTokenMint,
             this.program, this.pda, maxVoterWeightRecord
+        )
+    }
+
+    /**
+     * Construct a RelinquishVote instruction
+     *
+     * @param realmAccount The Realm Account
+     * @param governanceAccount The governance account. pda(realm, governance seed)
+     * @param proposalAccount Proposal account
+     * @param tokenOwnerRecord Token Owner Record account, pda(realm, governing_token_mint, governing_token_owner)
+     * @param governingTokenMint The Mint Account of the governing token used for voting (either community token or council token)
+     * @param governanceAuthority (Optional) Either the current delegate or governing token owner. Only needed if the proposal is still being voted on
+     * @param beneficiaryAccount (Optional) Beneficiary Account which would receive lamports from the disposed VoteRecord account. Only needed if the proposal is still being voted on
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createRelinquishVoteInstruction(
+        realmAccount: PublicKey,
+        governanceAccount: PublicKey,
+        proposalAccount: PublicKey,
+        tokenOwnerRecord: PublicKey,
+        governingTokenMint: PublicKey,
+        governanceAuthority?: PublicKey,
+        beneficiaryAccount?: PublicKey
+    ) {
+        return await govInstructions._relinquishVoteContext(
+            realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governingTokenMint,
+            this.program, this.pda, governanceAuthority, beneficiaryAccount
+        )
+    }
+
+    /**
+     * Construct a ExecuteTransaction instruction
+     *
+     * @param governanceAccount The governance account. pda(realm, governance seed)
+     * @param proposalAccount Proposal account
+     * @param proposalTransactionAccount Proposal Transaction Account. pda('governance', proposal, option_index, index)
+     * @param transactionAccounts Accounts that are part of the transaction, in order
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */   
+    async createExecuteTransactionInstruction(
+        governanceAccount: PublicKey,
+        proposalAccount: PublicKey,
+        proposalTransactionAccount: PublicKey,
+        transactionAccounts: AccountMeta[],
+    ) {
+        return await govInstructions._executeTransactionContext(
+            governanceAccount, proposalAccount, proposalTransactionAccount, transactionAccounts,
+            this.program
+        )
+    }
+
+    /**
+     * Construct a CreateNativeTreasury instruction
+     *
+     * @param governanceAccount The governance account. pda(realm, governance seed)
+     * @param payer Payer of the transaction
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */   
+    async createCreateNativeTreasuryInstruction(
+        governanceAccount: PublicKey,
+        payer: PublicKey
+    ) {
+        return govInstructions._createNativeTreasuryContext(
+            governanceAccount, payer, this.program, this.pda
+        )
+    }
+
+    /**
+     * Construct a SetGovernanceConfig instruction
+     *
+     * @param config Governance Config
+     * @param governanceAccount The governance account. pda(realm, governance seed)
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createSetGovernanceConfigInstruction(
+        config: GovernanceConfig,
+        governanceAccount: PublicKey
+    ) {
+        return await govInstructions._setGovernanceConfigContext(
+            config, governanceAccount, this.program
+        )
+    }
+
+    /**
+     * Construct a SetRealmAuthority instruction
+     *
+     * @param realmAccount The Realm Account
+     * @param currentRealmAuthority The current Realm Authority
+     * @param action "setChecked" - Sets realm authority and checks that the new authority is one of the realm's governances. "setUnchecked" - Sets new authority without any check. "remove" - Sets the realm authority to None.
+     * @param newRealmAuthority (Optional) The new realm authority. Required when the action is not "remove"
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createSetRealmAuthorityInstruction(
+        realmAccount: PublicKey,
+        currentRealmAuthority: PublicKey,
+        action: "setChecked" | "setUnchecked" | "remove",
+        newRealmAuthority?: PublicKey
+    ) {
+        return await govInstructions._setRealmAuthorityContext(
+            realmAccount, currentRealmAuthority, action, this.program, newRealmAuthority
+        )
+    }
+
+    /**
+     * Construct a SetRealmConfig instruction
+     *
+     * @param config New Realm Config
+     * @param realmAccount The Realm Account
+     * @param realmAuthority The current Realm Authority
+     * @param payer Payer of the transaction
+     * @param councilTokenMint (Optional) Mint Account of the token used as the council token. Required if the council is removed
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createSetRealmConfigInstruciton(
+        config: RealmConfigArgs,
+        realmAccount: PublicKey,
+        realmAuthority: PublicKey,
+        payer: PublicKey,
+        councilTokenMint?: PublicKey,
+        communityVoterWeightAddinProgramId?: PublicKey,
+        maxCommunityVoterWeightAddinProgramId?: PublicKey,
+        councilVoterWeightAddinProgramId?: PublicKey,
+        maxCouncilVoterWeightAddinProgramId?: PublicKey,
+    ) {
+        return await govInstructions._setRealmConfigContext(
+            config, realmAccount, realmAuthority, payer, this.program, this.pda, councilTokenMint, 
+            communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId, 
+            councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId
+        )
+    }
+
+    /**
+     * Construct a CreateTokenOwnerRecord instruction
+     *
+     * @param realmAccount The Realm Account
+     * @param governingTokenOwner The owner of the governing token account
+     * @param governingTokenMintAccount The Mint Account of the governing token
+     * @param payer Payer of the transaction
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createCreateTokenOwnerRecordInstruction(
+        realmAccount: PublicKey,
+        governingTokenOwner: PublicKey,
+        governingTokenMint: PublicKey,
+        payer: PublicKey,
+    ) {
+        return await govInstructions._createTokenOwnerRecordContext(
+            realmAccount, governingTokenOwner, governingTokenMint, payer, this.program,
+            this.pda
+        )
+    }
+
+    /**
+     * Construct a RevokeGoverningTokens instruction
+     *
+     * @param amount The number of tokens to revoke
+     * @param realmAccount The Realm Account
+     * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
+     * @param governingTokenMintAccount The Mint Account of the governing token
+     * @param revokeAuthority Either the mint authority of the governing token or governing token owner
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createRevokeGoverningTokensInstruction(
+        amount: BN,
+        realmAccount: PublicKey,
+        tokenOwnerRecord: PublicKey,
+        governingTokenMint: PublicKey,
+        revokeAuthority: PublicKey,
+    ) {
+        return await govInstructions._revokeGoverningTokensContext(
+            amount, realmAccount, tokenOwnerRecord, governingTokenMint, revokeAuthority,
+            this.program, this.pda
+        )
+    }
+
+    /**
+     * Construct a RefundProposalDeposit instruction
+     *
+     * @param proposalAccount The proposal account
+     * @param depositPayer Proposal deposit payer (beneficiary) account
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createRefundProposalDepositInstruction(
+        proposalAccount: PublicKey,
+        depositPayer: PublicKey,
+    ) {
+        return await govInstructions._refundProposalDepositContext(
+            proposalAccount, depositPayer, this.program, this.pda
+        )
+    }
+
+    /**
+     * Construct a CompleteProposal instruction
+     *
+     * @param proposalAccount The proposal account
+     * @param tokenOwnerRecord Token Owner Record Account of the proposal owner, pda(realm, governing_token_mint, proposal_owner)
+     * @param completeProposalAuthority Either the current delegate or governing token owner
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async createCompleteProposalInstruction(
+        proposalAccount: PublicKey,
+        tokenOwnerRecord: PublicKey,
+        completeProposalAuthority: PublicKey,
+    ) {
+        return await govInstructions._completeProposalContext(
+            proposalAccount, tokenOwnerRecord, completeProposalAuthority, this.program
         )
     }
 }

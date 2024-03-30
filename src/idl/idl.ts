@@ -1354,15 +1354,7 @@ export type GovernanceIdl =
       "name": "setGovernanceConfig",
       "accounts": [
         {
-          "name": "realmAccount",
-          "isMut": false,
-          "isSigner": false,
-          "docs": [
-            "Realm account the governance_account belongs to"
-          ]
-        },
-        {
-          "name": "goveranceAccount",
+          "name": "governanceAccount",
           "isMut": true,
           "isSigner": true,
           "docs": [
@@ -1439,6 +1431,7 @@ export type GovernanceIdl =
           "name": "newRealmAuthority",
           "isMut": false,
           "isSigner": false,
+          "isOptional": true,
           "docs": [
             "Must be one of the realm governances when set"
           ]
