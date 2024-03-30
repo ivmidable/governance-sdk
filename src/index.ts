@@ -7,7 +7,6 @@ import { PdaClient } from "./pda";
 import { GovernanceAccount, GovernanceConfig, MintMaxVoteWeightSource, RealmConfigArgs, RealmV2, TokenOwnerRecord, Vote, VoteType } from "./types";
 import * as govInstructions from "./instructions";
 import deserialize from "./account";
-import _broadcastTransaction from "./rpc";
 
 export class Governance {
     readonly programId: PublicKey;
