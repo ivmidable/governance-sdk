@@ -31,14 +31,6 @@ export class Governance {
 
     }
 
-    // RPC Handler
-    private async sendTx(ix: TransactionInstruction) {
-        const signature = await _broadcastTransaction(
-            this.connection, this.wallet, ix
-        );
-        return signature;
-    }
-
     // GET APIs
 
     async getRealm(realmAccount: PublicKey): Promise<RealmV2> {
