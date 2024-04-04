@@ -58,11 +58,17 @@ export async function fetchMultipleAndDeserialize(
         filters
     })
 
-    return accounts.map(acc => {
+    const deserializeAccounts = accounts.map(acc => {
         if (acc.account.data) {
-            return deserialize(name, acc.account.data, acc.pubkey)
+            try {
+                return deserialize(name, acc.account.data, acc.pubkey)
+            } catch {
+                return
+            }
         } else {
             throw Error("The account doesn't exist.")
         }
     })
+
+    return deserializeAccounts.filter(a => a !== undefined)
 }
