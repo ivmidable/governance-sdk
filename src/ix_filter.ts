@@ -1,11 +1,11 @@
 import { Program } from "@coral-xyz/anchor";
 import { TransactionInstruction } from "@solana/web3.js";
-import { GovernanceIdl } from "./idl/idl";
+import { ChatIdl, GovernanceIdl } from "./idl/idl";
 
 export default function ixFilter(
     ix: TransactionInstruction,
     ixName: string,
-    governance: Program<GovernanceIdl>
+    governance: Program<GovernanceIdl> | Program<ChatIdl>
 ): TransactionInstruction 
 {
     // Remove the default discriminator

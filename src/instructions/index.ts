@@ -21,6 +21,7 @@ import _createTokenOwnerRecordContext from "./create_token_owner_record";
 import _revokeGoverningTokensContext from "./revoke_governing_tokens";
 import _refundProposalDepositContext from "./refund_proposal_deposit";
 import _completeProposalContext from "./complete_proposal";
+import _postMessageContext from "./post_message";
 
 export {
     _createRealmContext,
@@ -46,4 +47,5 @@ export {
     _revokeGoverningTokensContext,
     _refundProposalDepositContext,
     _completeProposalContext,
+    _postMessageContext
 };

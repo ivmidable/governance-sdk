@@ -2,9 +2,9 @@ import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, c
 import {Program, Wallet, AnchorProvider, BN} from "@coral-xyz/anchor";
 import {GovernanceIdl} from "./idl/idl";
 import idl from "./idl/gov.json";
-import { DEFAULT_PROGRAM_ID } from "./constant";
+import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
-import { GovernanceAccount, GovernanceConfig, GovernanceV1, MintMaxVoteWeightSource, ProposalDeposit, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteType } from "./types";
+import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MintMaxVoteWeightSource, ProposalDeposit, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteType } from "./types";
 import * as govInstructions from "./instructions";
 import {fetchAndDeserialize, fetchMultipleAndDeserialize} from "./account";
 
@@ -188,7 +188,7 @@ export class Rpc {
      * @returns all Governance accounts for the given Realm
      */
     async getGovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceAccount[]> {
-        return await fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV2', undefined, 1, realmAccount)
+        return await fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV2', undefined, 1, realmAccount, 236)
     }
 
     /** Get V1 Governance account from its public key
@@ -345,6 +345,32 @@ export class Rpc {
     async getVoteRecordsForUser(voter: PublicKey) : Promise<VoteRecord[]> {
         return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D', 33, voter)
     }
+
+     /** Get Chat Message from its public key
+     * 
+     * @param chatMessageAddress The public key of the Chat Message account
+     * @returns Chat Message account
+     */
+     async getChatMessageByPubkey(chatMessageAddress: PublicKey): Promise<ChatMessage> {
+        return fetchAndDeserialize(this.connection, chatMessageAddress, 'chatMessage', true)
+    }
+    
+    /** Get Chat Messages for a proposal
+     * 
+     * @param proposalAccount The public key of the Proposal account
+     * @returns Chat Message accounts
+     */
+     async getChatMessagesByProposal(proposalAccount: PublicKey): Promise<ChatMessage[]> {
+        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', 1, proposalAccount, undefined, true)
+    }
+
+    /** Get all Chat Messages
+     * 
+     * @returns Chat Message accounts
+     */
+    async getAllChatMessages(): Promise<ChatMessage[]> {
+        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', undefined, undefined, undefined, true)
+    }
 }
 
 export class Instructions {
@@ -378,7 +404,7 @@ export class Instructions {
      *
      *  @return Instruction to add to a transaction
     */
-    async createCreateRealmInstruction (
+    async createRealmInstruction (
         name: string, 
         communityTokenMint: PublicKey,
         minCommunityWeightToCreateGovernance: BN,
@@ -412,7 +438,7 @@ export class Instructions {
      *
      *  @return Instruction to add to a transaction
     */
-    async createDepositGoverningTokensInstruction(
+    async depositGoverningTokensInstruction(
         realmAccount: PublicKey,
         governingTokenMintAccount: PublicKey,
         governingTokenSourceAccount: PublicKey,
@@ -437,7 +463,7 @@ export class Instructions {
      *
      *  @return Instruction to add to a transaction
     */
-    async createWithdrawGoverningTokensInstruction(
+    async withdrawGoverningTokensInstruction(
         realmAccount: PublicKey,
         governingTokenMintAccount: PublicKey,
         governingTokenDestinationAccount: PublicKey,
@@ -458,7 +484,7 @@ export class Instructions {
      * 
      *  @return Instruction to add to a transaction
     */
-     async createSetGovernanceDelegateInstruction(
+     async setGovernanceDelegateInstruction(
         tokenOwnerRecord: PublicKey,
         currentDelegateOrOwner: PublicKey,
         newGovernanceDelegate: PublicKey | null,
@@ -480,7 +506,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCreateGovernanceInstruction(
+    async createGovernanceInstruction(
         config: GovernanceConfig,
         realmAccount: PublicKey,
         governanceAuthority: PublicKey,
@@ -513,7 +539,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCreateProposalInstruction(
+    async createProposalInstruction(
         name: string,
         descriptionLink: string,
         voteType: VoteType,
@@ -546,7 +572,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async crateAddSignatoryInstruction(
+    async addSignatoryInstruction(
         signatory: PublicKey,
         proposalAccount: PublicKey,
         tokenOwnerRecord: PublicKey,
@@ -574,7 +600,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createInsertTransactionInstruction(
+    async insertTransactionInstruction(
         instructions: TransactionInstruction[],
         optionIndex: number,
         index: number,
@@ -602,7 +628,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createRemoveTransactionInstruction(
+    async removeTransactionInstruction(
         proposalAccount: PublicKey,
         tokenOwnerRecord: PublicKey,
         governanceAuthority: PublicKey,
@@ -626,7 +652,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCancelProposalInstruction(
+    async cancelProposalInstruction(
         realmAccount: PublicKey,
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
@@ -651,7 +677,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createSignOffProposalInstruction(
+    async signOffProposalInstruction(
         realmAccount: PublicKey,
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
@@ -681,7 +707,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCastVoteInstruction(
+    async castVoteInstruction(
         vote: Vote,
         realmAccount: PublicKey,
         governanceAccount: PublicKey,
@@ -713,7 +739,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createFinalizeVoteInstruction(
+    async finalizeVoteInstruction(
         realmAccount: PublicKey,
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
@@ -741,7 +767,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createRelinquishVoteInstruction(
+    async relinquishVoteInstruction(
         realmAccount: PublicKey,
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
@@ -767,7 +793,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */   
-    async createExecuteTransactionInstruction(
+    async executeTransactionInstruction(
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
         proposalTransactionAccount: PublicKey,
@@ -788,7 +814,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */   
-    async createCreateNativeTreasuryInstruction(
+    async createNativeTreasuryInstruction(
         governanceAccount: PublicKey,
         payer: PublicKey
     ) {
@@ -806,7 +832,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createSetGovernanceConfigInstruction(
+    async setGovernanceConfigInstruction(
         config: GovernanceConfig,
         governanceAccount: PublicKey
     ) {
@@ -826,7 +852,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createSetRealmAuthorityInstruction(
+    async setRealmAuthorityInstruction(
         realmAccount: PublicKey,
         currentRealmAuthority: PublicKey,
         action: "setChecked" | "setUnchecked" | "remove",
@@ -849,7 +875,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createSetRealmConfigInstruciton(
+    async setRealmConfigInstruciton(
         config: RealmConfigArgs,
         realmAccount: PublicKey,
         realmAuthority: PublicKey,
@@ -878,7 +904,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCreateTokenOwnerRecordInstruction(
+    async createTokenOwnerRecordInstruction(
         realmAccount: PublicKey,
         governingTokenOwner: PublicKey,
         governingTokenMint: PublicKey,
@@ -902,7 +928,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createRevokeGoverningTokensInstruction(
+    async revokeGoverningTokensInstruction(
         amount: BN,
         realmAccount: PublicKey,
         tokenOwnerRecord: PublicKey,
@@ -924,7 +950,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createRefundProposalDepositInstruction(
+    async refundProposalDepositInstruction(
         proposalAccount: PublicKey,
         depositPayer: PublicKey,
     ) {
@@ -943,7 +969,7 @@ export class Instructions {
      * 
      * @return Instruction to add to a transaction
     */
-    async createCompleteProposalInstruction(
+    async completeProposalInstruction(
         proposalAccount: PublicKey,
         tokenOwnerRecord: PublicKey,
         completeProposalAuthority: PublicKey,
@@ -952,6 +978,46 @@ export class Instructions {
             proposalAccount, tokenOwnerRecord, completeProposalAuthority, this.program
         )
     }
+
+    /**
+     * Construct a PostMessage instruction
+     *
+     * @param messageBody the message string or utf-8 encoded emotican characters
+     * @param messageType "text" if message | "reaction" if the message is emotican
+     * @param isReply true if the message is reply to another message
+     * @param chatMessageAccount The public key of a new keypair. This keypair must sign the transaction
+     * @param realmAccount The Realm Account
+     * @param governanceAccount The governance account. pda(realm, governance seed)
+     * @param proposalAccount Proposal account
+     * @param tokenOwnerRecord Author's Token Owner Record account, pda(realm, governing_token_mint, message_author)
+     * @param governanceAuthority Either the current delegate or governing token owner
+     * @param payer Payer of the transaction
+     * @param replyTo (optional) The public key of the parent message
+     * 
+     * 
+     * @return Instruction to add to a transaction
+    */
+    async postMessageInstruction(
+        messageBody: string,
+        messageType: "text" | "reaction",
+        isReply: boolean,
+        chatMessageAccount: PublicKey,
+        realmAccount: PublicKey,
+        governanceAccount: PublicKey,
+        proposalAccount: PublicKey,
+        tokenOwnerRecord: PublicKey,
+        governanceAuthority: PublicKey,
+        payer: PublicKey,
+        replyTo?: PublicKey,
+        voterWeightRecord?: PublicKey
+    ) {
+        return await govInstructions._postMessageContext(
+            isReply, messageBody, messageType, chatMessageAccount, this.programId, realmAccount, 
+            governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, this.provider, 
+            this.pda, payer, replyTo, voterWeightRecord
+        )
+    }
+
 }
 
 export * from "./types";

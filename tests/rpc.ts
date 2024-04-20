@@ -205,4 +205,35 @@ describe('Governance RPC', () => {
             })
         })
     })
+
+    describe("Chat Message Account", () => {
+        it("should fetch the chat message account from its public key", async() => {
+            const chatMessageAddress = new PublicKey("2gjtr5JQoWv61NDxi3rxAKtKhYfpRMimgFoYhWLQAnJp")
+            const chatMessage = await govRpc.getChatMessageByPubkey(chatMessageAddress)
+            assert.equal(chatMessage.publicKey.toBase58(), chatMessageAddress.toBase58())
+        })
+
+        it("should fetch the chat messages for the given proposal", async() => {
+            const proposalForChat = new PublicKey("9JaLWNtYvWs3mqtocQgWVXBNNrhmL3d8sd6jRevwSYus")
+            const chatMessages = await govRpc.getChatMessagesByProposal(proposalForChat)
+            console.log(chatMessages)
+
+            if (!chatMessages.length) {
+                throw new Error("Fetching failed")
+            }
+
+            chatMessages.forEach(chatMessage => {
+                assert.equal(chatMessage.proposal.toBase58(), proposalForChat.toBase58())
+            })
+        })
+
+        it("should fetch all chat messages", async() => {
+            try {
+                const chatMessages = await govRpc.getAllChatMessages()
+                console.log(chatMessages.length)
+            } catch(e) {
+                console.log(e)
+            }
+        })
+    })
 })

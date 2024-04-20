@@ -1,5 +1,5 @@
 import { IdlTypes, BN, IdlAccounts, DecodeType } from "@coral-xyz/anchor";
-import { GovernanceIdl } from "./idl/idl";
+import { GovernanceIdl, ChatIdl } from "./idl/idl";
 import { Idl, IdlTypeDef } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TypeDef } from "@coral-xyz/anchor/dist/cjs/program/namespace/types";
 import { PublicKey } from "@solana/web3.js";
@@ -39,6 +39,7 @@ export type RealmConfigArgs = IdlTypes<GovernanceIdl>["RealmConfigArgs"];
 export type InstructionData = IdlTypes<GovernanceIdl>["InstructionData"];
 export type Vote = IdlTypes<GovernanceIdl>["Vote"];
 export type GovernanceConfig = IdlTypes<GovernanceIdl>["GovernanceConfig"];
+export type MessageBody = IdlTypes<ChatIdl>["MessageBody"];
 
 export type RealmV2 = IdlAccountsWithPubkey<GovernanceIdl>["realmV2"];
 export type RealmV1 = IdlAccountsWithPubkey<GovernanceIdl>["realmV1"];
@@ -51,4 +52,5 @@ export type ProposalV1 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV1"];
 export type ProposalDeposit = IdlAccountsWithPubkey<GovernanceIdl>["proposalDeposit"];
 export type ProposalTransaction = IdlAccountsWithPubkey<GovernanceIdl>["proposalTransactionV2"];
 export type SignatoryRecord = IdlAccountsWithPubkey<GovernanceIdl>["signatoryRecordV2"];
-export type VoteRecord = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"]
+export type VoteRecord = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"];
+export type ChatMessage = IdlAccountsWithPubkey<ChatIdl>["chatMessage"];
