@@ -1,14 +1,15 @@
 import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, clusterApiUrl, AccountMeta} from "@solana/web3.js";
-import {Program, Wallet, AnchorProvider, BN} from "@coral-xyz/anchor";
+import {Program, Wallet, AnchorProvider} from "@coral-xyz/anchor";
+import BN from "bn.js";
 import {GovernanceIdl} from "./idl/idl";
 import idl from "./idl/gov.json";
 import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
-import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MintMaxVoteWeightSource, ProposalDeposit, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteType } from "./types";
+import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MaxVoterWeightRecord, MintMaxVoteWeightSource, ProposalDeposit, ProposalInstruction, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteRecordV1, VoteType, VoterWeightRecord } from "./types";
 import * as govInstructions from "./instructions";
-import {fetchAndDeserialize, fetchMultipleAndDeserialize} from "./account";
+import {fetchAndDeserialize, fetchMultipleAndDeserialize, fetchMultipleAndNotDeserialize} from "./account";
 
-export class Rpc {
+export class SplGovernance {
     readonly programId: PublicKey;
     readonly connection: Connection;
     readonly program: Program<GovernanceIdl>;
@@ -61,7 +62,7 @@ export class Rpc {
      * @returns Realms using the given token as the community mint
      */
     async getRealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV2', 'H', 1, communityMint)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV2', 'H', [1], [communityMint])
     }
 
     /** Get realm account V1 from its public key
@@ -97,7 +98,7 @@ export class Rpc {
      * @returns Realms using the given token as the community mint
      */
     async getV1RealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV1', '2', 1, communityMint)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV1', '2', [1], [communityMint])
     }
 
     /** Get Realm config account from its public key
@@ -117,6 +118,14 @@ export class Rpc {
     async getRealmConfigByRealm(realmAccount: PublicKey): Promise<RealmConfig> {
         const realmConfigAddress = this.pda.realmConfigAccount({realmAccount}).publicKey
         return this.getRealmConfigByPubkey(realmConfigAddress)
+    }
+
+    /** Get all Realm config accounts
+     * 
+     * @returns Realm Config Accounts
+     */
+    async getAllRealmConfigs(): Promise<RealmConfig[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmConfigAccount', 'C',)
     }
 
     /** Get Token Owner Record Account from its public key
@@ -152,7 +161,16 @@ export class Rpc {
      * @returns all Token Owner Records for the given realm account
      */
     async getTokenOwnerRecordsForRealm(realmAccount: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', 1, realmAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
+    }
+
+    /** Get all the token owner record addresses for the given realm 
+     * 
+     * @param realmAccount The public key of the Realm Account
+     * @returns all Token Owner Record Addresses for the given realm account
+     */
+    async getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]> {
+        return fetchMultipleAndNotDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
     }
 
     /** Get all the token owner records for the given owner 
@@ -161,7 +179,7 @@ export class Rpc {
      * @returns all Token Owner Records for the given owner
      */
     async getTokenOwnerRecordsForOwner(tokenOwner: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', 65, tokenOwner)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [65], [tokenOwner])
     }
 
     /** Get all the token owner records for the given mint 
@@ -170,7 +188,40 @@ export class Rpc {
      * @returns all Token Owner Records for the given mint
      */
     async getTokenOwnerRecordsForMint(tokenMint: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', 33, tokenMint)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [33], [tokenMint])
+    }
+
+    /** Get all the token owner records
+     * 
+     * @returns all Token Owner Records accounts
+     */
+    async getAllTokenOwnerRecords(): Promise<TokenOwnerRecord[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J')
+    }
+
+    /** Get all the token owner records with user as delegate in the given realm
+     * 
+     * @param realmAccount The public key of the Realm Account
+     * @param delegateAddress The public key of the delegate
+     * @param tokenMint (optional) the mint address
+     * @returns all Token Owner Records for the given realm account
+     */
+    async getDelegateRecordsForUserInRealm(
+        realmAccount: PublicKey,
+        delegateAddress: PublicKey,
+        tokenMint?: PublicKey
+    ): Promise<TokenOwnerRecord[]> {
+        const offsets = tokenMint ? [1, 33, 122] : [1, 122]
+        const addresses = tokenMint ? [realmAccount, tokenMint, delegateAddress] : [realmAccount, delegateAddress]
+
+        return fetchMultipleAndDeserialize(
+            this.connection, 
+            this.programId, 
+            'tokenOwnerRecordV2', 
+            'J', 
+            offsets, 
+            addresses
+        )
     }
 
     /** Get Governance account from its public key
@@ -188,7 +239,7 @@ export class Rpc {
      * @returns all Governance accounts for the given Realm
      */
     async getGovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceAccount[]> {
-        return await fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV2', undefined, 1, realmAccount, 236)
+        return await fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV2', undefined, [1], [realmAccount], 236)
     }
 
     /** Get V1 Governance account from its public key
@@ -206,7 +257,7 @@ export class Rpc {
      * @returns all Governance accounts for the given Realm
      */
     async getV1GovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV1', '4', 1, realmAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV1', '4', [1], [realmAccount])
     }
 
     /** Get Proposal account from its public key
@@ -221,10 +272,18 @@ export class Rpc {
     /** Get all the proposal accounts for the Governance
      * 
      * @param governanceAccount The public key of the Governance Account
+     * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
      * @returns all Proposal accounts for the given Governance
      */
-    async getProposalsforGovernance(governanceAccount: PublicKey): Promise<ProposalV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F', 1, governanceAccount)
+    async getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean): Promise<ProposalV2[]> {
+        return fetchMultipleAndDeserialize(
+            this.connection, 
+            this.programId, 
+            'proposalV2', 
+            'F', 
+            onlyActive ? [1, 65] : [1], 
+            onlyActive ? ['3', governanceAccount] : [governanceAccount]
+        )
     }
 
     /** Get all the proposal accounts for a user in Realm
@@ -233,7 +292,23 @@ export class Rpc {
      * @returns all Proposal accounts for the given user
      */
     async getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey): Promise<ProposalV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F', 66, tokenOwnerRecord)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F', [66], [tokenOwnerRecord])
+    }
+
+    /** Get all Proposals
+     * 
+     * @returns all V2 Proposals accounts
+     */
+    async getAllProposals(): Promise<ProposalV2[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F')
+    }
+
+    /** Get all V1 Proposals
+     * 
+     * @returns all V1 Proposals accounts
+     */
+    async getAllV1Proposals(): Promise<ProposalV1[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV1', '6')
     }
 
     /** Get Proposal Deposit account from its public key
@@ -245,13 +320,21 @@ export class Rpc {
         return fetchAndDeserialize(this.connection, proposalDepositAccount, 'proposalDeposit')
     }
 
+    /** Get all Proposal Deposit accounts
+     * 
+     * @returns Proposal Deposit accounts
+     */
+    async getAllProposalDeposits(): Promise<ProposalDeposit[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalDeposit', 'Q')
+    }
+
     /** Get proposal deposit accounts for the given proposal
      * 
      * @param proposalAccount The public key of the proposal account
      * @returns proposal deposit accounts for the given proposal
      */
     async getProposalDepositByProposal(proposalAccount: PublicKey): Promise<ProposalDeposit[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalDeposit', 'Q', 1, proposalAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalDeposit', 'Q', [1], [proposalAccount])
     }
 
     /** Get Proposal Transaction account from its public key
@@ -263,13 +346,29 @@ export class Rpc {
         return fetchAndDeserialize(this.connection, proposalTransactionAccount, 'proposalTransactionV2')
     }
 
+    /** Get all proposal instruction accounts (v1)
+     * 
+     * @returns proposal instruction accounts (v1)
+     */
+    async getAllProposalInstructions(): Promise<ProposalInstruction[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalInstructionV1', '9')
+    }
+
     /** Get proposal transaction accounts for the given proposal
      * 
      * @param proposalAccount The public key of the proposal account
      * @returns proposal transaction accounts for the given proposal
      */
     async getProposalTransactionsByProposal(proposalAccount: PublicKey): Promise<ProposalTransaction[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalTransactionV2', 'E', 1, proposalAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalTransactionV2', 'E', [1], [proposalAccount])
+    }
+
+    /** Get all proposal transaction accounts
+     * 
+     * @returns proposal transaction accounts
+     */
+    async getAllProposalTransactions(): Promise<ProposalTransaction[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalTransactionV2', 'E')
     }
 
     /** Get Signatory Record from its public key
@@ -301,7 +400,15 @@ export class Rpc {
      * @returns all signatory records for the given proposal
      */
     async getSignatoryRecordsForProposal(proposalAccount: PublicKey): Promise<SignatoryRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'signatoryRecordV2', 'P', 1, proposalAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'signatoryRecordV2', 'P', [1], [proposalAccount])
+    }
+
+    /** Get all signatory records
+     * 
+     * @returns all signatory records
+     */
+    async getAllSignatoryRecords(): Promise<SignatoryRecord[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'signatoryRecordV2', 'P')
     }
 
     /** Get Vote Record from its public key
@@ -334,16 +441,40 @@ export class Rpc {
      * @returns all vote records for the given proposal
      */
     async getVoteRecordsForProposal(proposalAccount: PublicKey): Promise<VoteRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D', 1, proposalAccount)
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D', [1], [proposalAccount])
     }
 
     /** Get all vote records for the voter
      * 
      * @param voter The public key of the voter
+     * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
      * @returns all vote records for the given voter
      */
-    async getVoteRecordsForUser(voter: PublicKey) : Promise<VoteRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D', 33, voter)
+    async getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean) : Promise<VoteRecord[]> {
+        return fetchMultipleAndDeserialize(
+            this.connection, 
+            this.programId, 
+            'voteRecordV2',
+            'D', 
+            unrelinquishedOnly ? [33,65] : [33], 
+            unrelinquishedOnly ? [voter, '1'] : [voter]
+        )
+    }
+
+    /** Get all vote records
+     * 
+     * @returns all V2 vote records
+     */
+    async getAllVoteRecords(): Promise<VoteRecord[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D')
+    }
+
+    /** Get all V1 vote records
+     * 
+     * @returns all V1 vote records
+     */
+    async getAllV1VoteRecords(): Promise<VoteRecordV1[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV1', '8')
     }
 
      /** Get Chat Message from its public key
@@ -352,7 +483,7 @@ export class Rpc {
      * @returns Chat Message account
      */
      async getChatMessageByPubkey(chatMessageAddress: PublicKey): Promise<ChatMessage> {
-        return fetchAndDeserialize(this.connection, chatMessageAddress, 'chatMessage', true)
+        return fetchAndDeserialize(this.connection, chatMessageAddress, 'chatMessage', "chat")
     }
     
     /** Get Chat Messages for a proposal
@@ -361,7 +492,7 @@ export class Rpc {
      * @returns Chat Message accounts
      */
      async getChatMessagesByProposal(proposalAccount: PublicKey): Promise<ChatMessage[]> {
-        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', 1, proposalAccount, undefined, true)
+        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', [1], [proposalAccount], undefined, "chat")
     }
 
     /** Get all Chat Messages
@@ -369,25 +500,23 @@ export class Rpc {
      * @returns Chat Message accounts
      */
     async getAllChatMessages(): Promise<ChatMessage[]> {
-        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', undefined, undefined, undefined, true)
+        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', undefined, undefined, undefined, "chat")
     }
-}
 
-export class Instructions {
-    readonly programId: PublicKey;
-    readonly program: Program<GovernanceIdl>;
-    readonly pda: PdaClient;
-    private readonly provider: AnchorProvider;
+    /** Get Voter Weight Record
+     * 
+     * @returns Voter Weight Record account
+     */
+    async getVoterWeightRecord(voterWeightRecordAddress: PublicKey): Promise<VoterWeightRecord> {
+        return fetchAndDeserialize(this.connection, voterWeightRecordAddress, "voterWeightRecord", "addin")
+    }
 
-    constructor(
-        programId?: PublicKey,
-    ) {
-        const connection = new Connection(clusterApiUrl('devnet'));
-        const wallet = new Wallet(Keypair.generate());
-        this.programId = programId ?? DEFAULT_PROGRAM_ID;
-        this.provider = new AnchorProvider(connection, wallet, {commitment: "confirmed"});
-        this.program = new Program<GovernanceIdl>(idl as GovernanceIdl, this.programId, this.provider);
-        this.pda = new PdaClient(this.programId);
+     /** Get Max Voter Weight Record
+     * 
+     * @returns Voter Weight Record account
+     */
+     async getMaxVoterWeightRecord(maxVoterWeightRecordAddress: PublicKey): Promise<MaxVoterWeightRecord> {
+        return fetchAndDeserialize(this.connection, maxVoterWeightRecordAddress, "maxVoterWeightRecord", "addin")
     }
 
     /**
@@ -407,7 +536,7 @@ export class Instructions {
     async createRealmInstruction (
         name: string, 
         communityTokenMint: PublicKey,
-        minCommunityWeightToCreateGovernance: BN,
+        minCommunityWeightToCreateGovernance: BN | number,
         payer: PublicKey,
         communityMintMaxVoterWeightSource: MintMaxVoteWeightSource = {type: "supplyFraction", amount: new BN(Math.pow(10,10))},
         councilTokenMint?: PublicKey,
@@ -445,7 +574,7 @@ export class Instructions {
         governingTokenOwner: PublicKey,
         governingTokenSourceAuthority: PublicKey,
         payer: PublicKey,
-        amount: BN
+        amount: BN | number
     ) {
         return await govInstructions._depositGoverningTokensContext(
             realmAccount, governingTokenMintAccount, governingTokenSourceAccount, governingTokenOwner, 
@@ -499,7 +628,7 @@ export class Instructions {
      *
      * @param config Governance Config
      * @param realmAccount The Realm Account
-     * @param governanceAuthority Either the current delegate or governing token owner
+     * @param governanceAuthority The authority of the given realm
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner). Required only if the signer is not the realm authority
      * @param payer Payer of the transaction
      * @param governanceAccountSeed (Optional) Random public key to seed the governance account
@@ -929,7 +1058,7 @@ export class Instructions {
      * @return Instruction to add to a transaction
     */
     async revokeGoverningTokensInstruction(
-        amount: BN,
+        amount: BN | number,
         realmAccount: PublicKey,
         tokenOwnerRecord: PublicKey,
         governingTokenMint: PublicKey,
@@ -1013,11 +1142,10 @@ export class Instructions {
     ) {
         return await govInstructions._postMessageContext(
             isReply, messageBody, messageType, chatMessageAccount, this.programId, realmAccount, 
-            governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, this.provider, 
+            governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, this._provider, 
             this.pda, payer, replyTo, voterWeightRecord
         )
     }
-
 }
 
 export * from "./types";

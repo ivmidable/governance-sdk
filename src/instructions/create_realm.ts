@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import {BN, Program} from "@coral-xyz/anchor";
+import {Program} from "@coral-xyz/anchor";
+import BN from "bn.js";
 import { MintMaxVoteWeightSource } from "../types";
 import { PdaClient } from "../pda";
 import { GovernanceIdl } from "../idl/idl";
@@ -8,7 +9,7 @@ import ixFilter from "../ix_filter";
 export default async function _createRealmContext(
     name: string, 
     communityTokenMint: PublicKey,
-    minCommunityWeightToCreateGovernance: BN,
+    minCommunityWeightToCreateGovernance: BN | number,
     communityMintMaxVoterWeightSource: MintMaxVoteWeightSource,
     communityTokenType: "liquid" | "membership" | "dormant",
     councilTokenType: "liquid" | "membership" | "dormant",
@@ -45,9 +46,13 @@ export default async function _createRealmContext(
 
     const realmConfigAccount = pda.realmConfigAccount({realmAccount}).publicKey
 
+    const minCommunityWeight = typeof minCommunityWeightToCreateGovernance === "number" ?
+        new BN(minCommunityWeightToCreateGovernance) :
+        minCommunityWeightToCreateGovernance
+
     const defaultIx = await program.methods.createRealm(name, {
         useCouncilMint: councilTokenMint !== undefined,
-        minCommunityWeightToCreateGovernance,
+        minCommunityWeightToCreateGovernance: minCommunityWeight,
         communityMintMaxVoterWeightSource: communityMintMaxVoterWeightSource.type === "absolute" ? 
             {absolute: [communityMintMaxVoterWeightSource.amount]} : 
             {supplyFraction: [communityMintMaxVoterWeightSource.amount]}

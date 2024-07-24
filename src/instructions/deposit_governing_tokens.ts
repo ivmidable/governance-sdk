@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
-import { BN, Program } from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import ixFilter from "../ix_filter";
 import { GovernanceIdl } from "../idl/idl";
 import { PdaClient } from "../pda";
@@ -10,7 +11,7 @@ export default async function _depositGoverningTokensContext(
     governingTokenSourceAccount: PublicKey,
     governingTokenOwner: PublicKey,
     governingTokenSourceAuthority: PublicKey,
-    amount: BN,
+    amount: BN | number,
     program: Program<GovernanceIdl>,
     payer: PublicKey,
     pda: PdaClient
@@ -25,7 +26,11 @@ export default async function _depositGoverningTokensContext(
 
     const realmConfig = pda.realmConfigAccount({realmAccount}).publicKey
 
-    const defaultIx = await program.methods.depositGoverningTokens(amount)
+    const depositAmount = typeof amount === "number" ?
+        new BN(amount) :
+        amount
+
+    const defaultIx = await program.methods.depositGoverningTokens(depositAmount)
     .accounts({
         realmAccount,
         governingTokenHoldingAccount,

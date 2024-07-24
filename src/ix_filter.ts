@@ -29,8 +29,10 @@ export default function ixFilter(
     // Prepend new discriminator in the ix
     ix.data = Buffer.concat([discriminator, ix.data]);
     
-    // Remove the optional keys not provided
-    ix.keys = ix.keys.filter(key => key.pubkey.toBase58() !== governance.programId.toBase58());
+    // Remove the optional keys not provided (execept for executeTransaction)
+    if (ixName !== "executeTransaction") {
+        ix.keys = ix.keys.filter(key => key.pubkey.toBase58() !== governance.programId.toBase58());
+    }
     
     return ix;
 }

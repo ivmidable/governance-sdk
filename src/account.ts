@@ -1,12 +1,15 @@
 import idl from "./idl/gov.json";
 import chatIdl from "./idl/chat.json";
+import addinIdl from "./idl/addin.json";
 import {BorshAccountsCoder} from "@coral-xyz/anchor/dist/cjs/coder/borsh/accounts";
-import { GovernanceIdl, ChatIdl } from "./idl/idl";
-import { Connection, PublicKey } from "@solana/web3.js";
+import { GovernanceIdl, ChatIdl, AddinIdl } from "./idl/idl";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
-export function deserialize(name: string, data: Buffer, pubkey: PublicKey, isChatAccount?: boolean) {
-    const coder = isChatAccount ?
+export function deserialize(name: string, data: Buffer, pubkey: PublicKey, programType?: "chat" | "addin") {
+    const coder = programType === "chat" ?
      new BorshAccountsCoder(chatIdl as ChatIdl) :
+     programType === "addin" ?
+     new BorshAccountsCoder(addinIdl as AddinIdl) :
      new BorshAccountsCoder(idl as GovernanceIdl);
 
     // Prepend 8-byte default discriminator
@@ -17,11 +20,16 @@ export function deserialize(name: string, data: Buffer, pubkey: PublicKey, isCha
     }
 }
 
-export async function fetchAndDeserialize(connection: Connection, pubkey: PublicKey, name: string, isChatAccount?: boolean) {
+export async function fetchAndDeserialize(
+    connection: Connection, 
+    pubkey: PublicKey, 
+    name: string, 
+    programType?: "chat" | "addin"
+) {
     const account = await connection.getAccountInfo(pubkey);
 
     if (account?.data) {
-        return deserialize(name, account.data, pubkey, isChatAccount);
+        return {...deserialize(name, account.data, pubkey, programType), balance: account.lamports / LAMPORTS_PER_SOL};
     } else {
         throw Error("The account doesn't exist.");
     }
@@ -32,10 +40,10 @@ export async function fetchMultipleAndDeserialize(
     programId: PublicKey,
     name: string, 
     initialByte?: string, 
-    customOffset?: number,
-    customOffsetAddress?: PublicKey,
+    customOffset?: number[],
+    customOffsetAddress?: (PublicKey | string)[],
     accountSize?: number,
-    isChatAccount?: boolean
+    programType?: "chat" | "addin"
 ) {
     const filters = [];
 
@@ -51,11 +59,15 @@ export async function fetchMultipleAndDeserialize(
     }
 
     if (customOffset && customOffsetAddress) {
-        filters.push({
-            memcmp: {
-                offset: customOffset,
-                bytes: customOffsetAddress.toBase58()
-            }
+        customOffset.forEach((offset,index) => {
+            const offsetValue = customOffsetAddress[index]
+
+            filters.push({
+                memcmp: {
+                    offset,
+                    bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
+                }
+            })
         })
     }
 
@@ -74,7 +86,10 @@ export async function fetchMultipleAndDeserialize(
     const deserializeAccounts = accounts.map(acc => {
         if (acc.account.data) {
             try {
-                return deserialize(name, acc.account.data, acc.pubkey, isChatAccount)
+                return {
+                    ...deserialize(name, acc.account.data, acc.pubkey, programType), 
+                    balance: acc.account.lamports/LAMPORTS_PER_SOL
+                }
             } catch {
                 return
             }
@@ -84,4 +99,59 @@ export async function fetchMultipleAndDeserialize(
     })
 
     return deserializeAccounts.filter(a => a !== undefined)
+}
+
+export async function fetchMultipleAndNotDeserialize(
+    connection: Connection, 
+    programId: PublicKey,
+    name: string, 
+    initialByte?: string, 
+    customOffset?: number[],
+    customOffsetAddress?: (PublicKey | string)[],
+    accountSize?: number,
+    programType?: "chat" | "addin"
+) {
+    const filters = [];
+
+    if (initialByte) {
+        filters.push(
+            {
+                memcmp: {
+                    offset: 0,
+                    bytes: initialByte
+                }
+            }
+        )
+    }
+
+    if (customOffset && customOffsetAddress) {
+        customOffset.forEach((offset,index) => {
+            const offsetValue = customOffsetAddress[index]
+
+            filters.push({
+                memcmp: {
+                    offset,
+                    bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
+                }
+            })
+        })
+    }
+
+    if (accountSize) {
+        filters.push(
+            {
+                dataSize: accountSize
+              },
+        )
+    }
+
+    const accounts = await connection.getProgramAccounts(programId, {
+        filters,
+        dataSlice: {
+            length: 0,
+            offset: 0
+        }
+    })
+
+    return accounts.map(acc => acc.pubkey)
 }

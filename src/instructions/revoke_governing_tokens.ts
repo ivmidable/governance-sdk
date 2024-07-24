@@ -1,11 +1,12 @@
-import { Program, BN } from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import {PublicKey } from "@solana/web3.js";
 import { GovernanceIdl } from "../idl/idl";
 import ixFilter from "../ix_filter";
 import { PdaClient } from "../pda";
 
 export default async function _revokeGoverningTokensContext(
-    amount: BN,
+    amount: BN | number,
     realmAccount: PublicKey,
     tokenOwnerRecord: PublicKey,
     governingTokenMint: PublicKey,
@@ -19,7 +20,11 @@ export default async function _revokeGoverningTokensContext(
 
     const realmConfigAccount = pda.realmConfigAccount({realmAccount}).publicKey
 
-    const defaultIx = await program.methods.revokeGoverningTokens(amount)
+    const revokeAmount = typeof amount === "number" ?
+        new BN(amount) :
+        amount
+
+    const defaultIx = await program.methods.revokeGoverningTokens(revokeAmount)
     .accounts({
         realmAccount,
         governingTokenMint,

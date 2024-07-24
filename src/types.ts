@@ -1,5 +1,6 @@
-import { IdlTypes, BN, IdlAccounts, DecodeType } from "@coral-xyz/anchor";
-import { GovernanceIdl, ChatIdl } from "./idl/idl";
+import { IdlTypes, IdlAccounts } from "@coral-xyz/anchor";
+import BN from "bn.js";
+import { GovernanceIdl, ChatIdl, AddinIdl } from "./idl/idl";
 import { Idl, IdlTypeDef } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TypeDef } from "@coral-xyz/anchor/dist/cjs/program/namespace/types";
 import { PublicKey } from "@solana/web3.js";
@@ -37,11 +38,20 @@ type IdlAccountsWithPubkey<I extends Idl> = TypeDefDictionary<
 export type SetRealmAuthorityAction = IdlTypes<GovernanceIdl>["SetRealmAuthorityAction"];
 export type RealmConfigArgs = IdlTypes<GovernanceIdl>["RealmConfigArgs"];
 export type InstructionData = IdlTypes<GovernanceIdl>["InstructionData"];
+export type ProposalOption = IdlTypes<GovernanceIdl>["ProposalOption"];
 export type Vote = IdlTypes<GovernanceIdl>["Vote"];
-export type GovernanceConfig = IdlTypes<GovernanceIdl>["GovernanceConfig"];
+export type VoteChoice = IdlTypes<GovernanceIdl>["VoteChoice"];
+export type GovernanceConfigMut = IdlTypes<GovernanceIdl>["GovernanceConfig"];
+export interface GovernanceConfig extends 
+    Omit<GovernanceConfigMut, 'minCommunityWeightToCreateProposal' | 'minCouncilWeightToCreateProposal'> {
+    minCommunityWeightToCreateProposal: BN | number,
+    minCouncilWeightToCreateProposal: BN | number
+};
 export type MessageBody = IdlTypes<ChatIdl>["MessageBody"];
 
-export type RealmV2 = IdlAccountsWithPubkey<GovernanceIdl>["realmV2"];
+type RealmsV2Account = IdlAccounts<GovernanceIdl>["realmV2"]
+
+export interface RealmV2 extends RealmsV2Account { publicKey: PublicKey};
 export type RealmV1 = IdlAccountsWithPubkey<GovernanceIdl>["realmV1"];
 export type RealmConfig = IdlAccountsWithPubkey<GovernanceIdl>["realmConfigAccount"];
 export type TokenOwnerRecord = IdlAccountsWithPubkey<GovernanceIdl>["tokenOwnerRecordV2"];
@@ -51,6 +61,10 @@ export type ProposalV2 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV2"];
 export type ProposalV1 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV1"];
 export type ProposalDeposit = IdlAccountsWithPubkey<GovernanceIdl>["proposalDeposit"];
 export type ProposalTransaction = IdlAccountsWithPubkey<GovernanceIdl>["proposalTransactionV2"];
+export type ProposalInstruction = IdlAccountsWithPubkey<GovernanceIdl>["proposalInstructionV1"];
 export type SignatoryRecord = IdlAccountsWithPubkey<GovernanceIdl>["signatoryRecordV2"];
 export type VoteRecord = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"];
+export type VoteRecordV1 = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV1"];
 export type ChatMessage = IdlAccountsWithPubkey<ChatIdl>["chatMessage"];
+export type VoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["voterWeightRecord"];
+export type MaxVoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["maxVoterWeightRecord"];

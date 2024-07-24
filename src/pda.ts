@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import { PublicKey } from "@solana/web3.js"
 
 type Pda = {
@@ -97,13 +97,13 @@ export class PdaClient {
     }
 
     governanceAccount(
-        {realmAccount, governedAccount} :
-        {realmAccount: PublicKey, governedAccount: PublicKey}
+        {realmAccount, seed} :
+        {realmAccount: PublicKey, seed: PublicKey}
     ) {
         const pda = PublicKey.findProgramAddressSync([
             Buffer.from("account-governance"), 
             realmAccount.toBuffer(),
-            governedAccount.toBuffer(),
+            seed.toBuffer(),
         ],
             this.programId
         )
