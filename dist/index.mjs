@@ -41,7 +41,7 @@ var __async = (__this, __arguments, generator) => {
 // src/index.ts
 import { SystemProgram } from "@solana/web3.js";
 import { Program as Program2, AnchorProvider as AnchorProvider2 } from "@coral-xyz/anchor";
-import BN6 from "bn.js";
+import BN7 from "bn.js";
 
 // src/idl/gov.json
 var gov_default = {
@@ -4965,9 +4965,13 @@ function _createNativeTreasuryContext(governanceAccount, payer, program, pda) {
 }
 
 // src/instructions/set_governance_config.ts
+import { BN as BN5 } from "bn.js";
 function _setGovernanceConfigContext(config, governanceAccount, program) {
   return __async(this, null, function* () {
-    const defaultIx = yield program.methods.setGovernanceConfig(config).accounts({
+    const govConfig = __spreadValues({}, config);
+    govConfig.minCommunityWeightToCreateProposal = typeof govConfig.minCommunityWeightToCreateProposal === "number" ? new BN5(govConfig.minCommunityWeightToCreateProposal) : govConfig.minCommunityWeightToCreateProposal;
+    govConfig.minCouncilWeightToCreateProposal = typeof govConfig.minCouncilWeightToCreateProposal === "number" ? new BN5(govConfig.minCouncilWeightToCreateProposal) : govConfig.minCouncilWeightToCreateProposal;
+    const defaultIx = yield program.methods.setGovernanceConfig(govConfig).accounts({
       governanceAccount
     }).instruction();
     return ixFilter(defaultIx, "setGovernanceConfig", program);
@@ -5034,7 +5038,7 @@ function _createTokenOwnerRecordContext(realmAccount, governingTokenOwner, gover
 }
 
 // src/instructions/revoke_governing_tokens.ts
-import BN5 from "bn.js";
+import BN6 from "bn.js";
 function _revokeGoverningTokensContext(amount, realmAccount, tokenOwnerRecord, governingTokenMint, revokeAuthority, program, pda) {
   return __async(this, null, function* () {
     const governingTokenHoldingAccount = pda.communityTokenHoldingAccount({
@@ -5042,7 +5046,7 @@ function _revokeGoverningTokensContext(amount, realmAccount, tokenOwnerRecord, g
       communityMint: governingTokenMint
     }).publicKey;
     const realmConfigAccount = pda.realmConfigAccount({ realmAccount }).publicKey;
-    const revokeAmount = typeof amount === "number" ? new BN5(amount) : amount;
+    const revokeAmount = typeof amount === "number" ? new BN6(amount) : amount;
     const defaultIx = yield program.methods.revokeGoverningTokens(revokeAmount).accounts({
       realmAccount,
       governingTokenMint,
@@ -5462,6 +5466,7 @@ var addin_default = {
 
 // src/account.ts
 import { BorshAccountsCoder } from "@coral-xyz/anchor/dist/cjs/coder/borsh/accounts";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 function deserialize(name, data, pubkey, programType) {
   const coder = programType === "chat" ? new BorshAccountsCoder(chat_default) : programType === "addin" ? new BorshAccountsCoder(addin_default) : new BorshAccountsCoder(gov_default);
   const modifiedData = Buffer.concat([Buffer.from("0".repeat(16), "hex"), data]);
@@ -5473,7 +5478,7 @@ function fetchAndDeserialize(connection, pubkey, name, programType) {
   return __async(this, null, function* () {
     const account = yield connection.getAccountInfo(pubkey);
     if (account == null ? void 0 : account.data) {
-      return deserialize(name, account.data, pubkey, programType);
+      return __spreadProps(__spreadValues({}, deserialize(name, account.data, pubkey, programType)), { balance: account.lamports / LAMPORTS_PER_SOL });
     } else {
       throw Error("The account doesn't exist.");
     }
@@ -5516,7 +5521,9 @@ function fetchMultipleAndDeserialize(connection, programId, name, initialByte, c
     const deserializeAccounts = accounts.map((acc) => {
       if (acc.account.data) {
         try {
-          return deserialize(name, acc.account.data, acc.pubkey, programType);
+          return __spreadProps(__spreadValues({}, deserialize(name, acc.account.data, acc.pubkey, programType)), {
+            balance: acc.account.lamports / LAMPORTS_PER_SOL
+          });
         } catch (e) {
           return;
         }
@@ -5525,6 +5532,47 @@ function fetchMultipleAndDeserialize(connection, programId, name, initialByte, c
       }
     });
     return deserializeAccounts.filter((a) => a !== void 0);
+  });
+}
+function fetchMultipleAndNotDeserialize(connection, programId, name, initialByte, customOffset, customOffsetAddress, accountSize, programType) {
+  return __async(this, null, function* () {
+    const filters = [];
+    if (initialByte) {
+      filters.push(
+        {
+          memcmp: {
+            offset: 0,
+            bytes: initialByte
+          }
+        }
+      );
+    }
+    if (customOffset && customOffsetAddress) {
+      customOffset.forEach((offset, index) => {
+        const offsetValue = customOffsetAddress[index];
+        filters.push({
+          memcmp: {
+            offset,
+            bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
+          }
+        });
+      });
+    }
+    if (accountSize) {
+      filters.push(
+        {
+          dataSize: accountSize
+        }
+      );
+    }
+    const accounts = yield connection.getProgramAccounts(programId, {
+      filters,
+      dataSlice: {
+        length: 0,
+        offset: 0
+      }
+    });
+    return accounts.map((acc) => acc.pubkey);
   });
 }
 
@@ -5639,6 +5687,15 @@ var SplGovernance = class {
       return this.getRealmConfigByPubkey(realmConfigAddress);
     });
   }
+  /** Get all Realm config accounts
+   * 
+   * @returns Realm Config Accounts
+   */
+  getAllRealmConfigs() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmConfigAccount", "C");
+    });
+  }
   /** Get Token Owner Record Account from its public key
    * 
    * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
@@ -5676,6 +5733,16 @@ var SplGovernance = class {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
     });
   }
+  /** Get all the token owner record addresses for the given realm 
+   * 
+   * @param realmAccount The public key of the Realm Account
+   * @returns all Token Owner Record Addresses for the given realm account
+   */
+  getTokenOwnerRecordAddressesForRealm(realmAccount) {
+    return __async(this, null, function* () {
+      return fetchMultipleAndNotDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
+    });
+  }
   /** Get all the token owner records for the given owner 
    * 
    * @param tokenOwner The public key of the user whose token owner records to fetch
@@ -5694,6 +5761,15 @@ var SplGovernance = class {
   getTokenOwnerRecordsForMint(tokenMint) {
     return __async(this, null, function* () {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [33], [tokenMint]);
+    });
+  }
+  /** Get all the token owner records
+   * 
+   * @returns all Token Owner Records accounts
+   */
+  getAllTokenOwnerRecords() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J");
     });
   }
   /** Get all the token owner records with user as delegate in the given realm
@@ -5795,6 +5871,24 @@ var SplGovernance = class {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV2", "F", [66], [tokenOwnerRecord]);
     });
   }
+  /** Get all Proposals
+   * 
+   * @returns all V2 Proposals accounts
+   */
+  getAllProposals() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV2", "F");
+    });
+  }
+  /** Get all V1 Proposals
+   * 
+   * @returns all V1 Proposals accounts
+   */
+  getAllV1Proposals() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV1", "6");
+    });
+  }
   /** Get Proposal Deposit account from its public key
    * 
    * @param proposalDepositAccount The public key of the proposal deposit account
@@ -5803,6 +5897,15 @@ var SplGovernance = class {
   getProposalDepositByPubkey(proposalDepositAccount) {
     return __async(this, null, function* () {
       return fetchAndDeserialize(this.connection, proposalDepositAccount, "proposalDeposit");
+    });
+  }
+  /** Get all Proposal Deposit accounts
+   * 
+   * @returns Proposal Deposit accounts
+   */
+  getAllProposalDeposits() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalDeposit", "Q");
     });
   }
   /** Get proposal deposit accounts for the given proposal
@@ -5825,6 +5928,15 @@ var SplGovernance = class {
       return fetchAndDeserialize(this.connection, proposalTransactionAccount, "proposalTransactionV2");
     });
   }
+  /** Get all proposal instruction accounts (v1)
+   * 
+   * @returns proposal instruction accounts (v1)
+   */
+  getAllProposalInstructions() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalInstructionV1", "9");
+    });
+  }
   /** Get proposal transaction accounts for the given proposal
    * 
    * @param proposalAccount The public key of the proposal account
@@ -5833,6 +5945,15 @@ var SplGovernance = class {
   getProposalTransactionsByProposal(proposalAccount) {
     return __async(this, null, function* () {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalTransactionV2", "E", [1], [proposalAccount]);
+    });
+  }
+  /** Get all proposal transaction accounts
+   * 
+   * @returns proposal transaction accounts
+   */
+  getAllProposalTransactions() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalTransactionV2", "E");
     });
   }
   /** Get Signatory Record from its public key
@@ -5865,6 +5986,15 @@ var SplGovernance = class {
   getSignatoryRecordsForProposal(proposalAccount) {
     return __async(this, null, function* () {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "signatoryRecordV2", "P", [1], [proposalAccount]);
+    });
+  }
+  /** Get all signatory records
+   * 
+   * @returns all signatory records
+   */
+  getAllSignatoryRecords() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "signatoryRecordV2", "P");
     });
   }
   /** Get Vote Record from its public key
@@ -5915,6 +6045,24 @@ var SplGovernance = class {
         unrelinquishedOnly ? [33, 65] : [33],
         unrelinquishedOnly ? [voter, "1"] : [voter]
       );
+    });
+  }
+  /** Get all vote records
+   * 
+   * @returns all V2 vote records
+   */
+  getAllVoteRecords() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "voteRecordV2", "D");
+    });
+  }
+  /** Get all V1 vote records
+   * 
+   * @returns all V1 vote records
+   */
+  getAllV1VoteRecords() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "voteRecordV1", "8");
     });
   }
   /** Get Chat Message from its public key
@@ -5979,7 +6127,7 @@ var SplGovernance = class {
    *  @return Instruction to add to a transaction
   */
   createRealmInstruction(_0, _1, _2, _3) {
-    return __async(this, arguments, function* (name, communityTokenMint, minCommunityWeightToCreateGovernance, payer, communityMintMaxVoterWeightSource = { type: "supplyFraction", amount: new BN6(Math.pow(10, 10)) }, councilTokenMint, communityTokenType = "liquid", councilTokenType = "liquid", communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId, councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId) {
+    return __async(this, arguments, function* (name, communityTokenMint, minCommunityWeightToCreateGovernance, payer, communityMintMaxVoterWeightSource = { type: "supplyFraction", amount: new BN7(Math.pow(10, 10)) }, councilTokenMint, communityTokenType = "liquid", councilTokenType = "liquid", communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId, councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId) {
       return yield _createRealmContext(
         name,
         communityTokenMint,

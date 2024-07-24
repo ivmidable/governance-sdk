@@ -4876,8 +4876,10 @@ type ProposalV2 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV2"];
 type ProposalV1 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV1"];
 type ProposalDeposit = IdlAccountsWithPubkey<GovernanceIdl>["proposalDeposit"];
 type ProposalTransaction = IdlAccountsWithPubkey<GovernanceIdl>["proposalTransactionV2"];
+type ProposalInstruction = IdlAccountsWithPubkey<GovernanceIdl>["proposalInstructionV1"];
 type SignatoryRecord = IdlAccountsWithPubkey<GovernanceIdl>["signatoryRecordV2"];
 type VoteRecord = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"];
+type VoteRecordV1 = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV1"];
 type ChatMessage = IdlAccountsWithPubkey<ChatIdl>["chatMessage"];
 type VoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["voterWeightRecord"];
 type MaxVoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["maxVoterWeightRecord"];
@@ -4950,6 +4952,11 @@ declare class SplGovernance {
      * @returns Realm Config Account
      */
     getRealmConfigByRealm(realmAccount: PublicKey): Promise<RealmConfig>;
+    /** Get all Realm config accounts
+     *
+     * @returns Realm Config Accounts
+     */
+    getAllRealmConfigs(): Promise<RealmConfig[]>;
     /** Get Token Owner Record Account from its public key
      *
      * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
@@ -4970,6 +4977,12 @@ declare class SplGovernance {
      * @returns all Token Owner Records for the given realm account
      */
     getTokenOwnerRecordsForRealm(realmAccount: PublicKey): Promise<TokenOwnerRecord[]>;
+    /** Get all the token owner record addresses for the given realm
+     *
+     * @param realmAccount The public key of the Realm Account
+     * @returns all Token Owner Record Addresses for the given realm account
+     */
+    getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]>;
     /** Get all the token owner records for the given owner
      *
      * @param tokenOwner The public key of the user whose token owner records to fetch
@@ -4982,6 +4995,11 @@ declare class SplGovernance {
      * @returns all Token Owner Records for the given mint
      */
     getTokenOwnerRecordsForMint(tokenMint: PublicKey): Promise<TokenOwnerRecord[]>;
+    /** Get all the token owner records
+     *
+     * @returns all Token Owner Records accounts
+     */
+    getAllTokenOwnerRecords(): Promise<TokenOwnerRecord[]>;
     /** Get all the token owner records with user as delegate in the given realm
      *
      * @param realmAccount The public key of the Realm Account
@@ -5033,12 +5051,27 @@ declare class SplGovernance {
      * @returns all Proposal accounts for the given user
      */
     getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey): Promise<ProposalV2[]>;
+    /** Get all Proposals
+     *
+     * @returns all V2 Proposals accounts
+     */
+    getAllProposals(): Promise<ProposalV2[]>;
+    /** Get all V1 Proposals
+     *
+     * @returns all V1 Proposals accounts
+     */
+    getAllV1Proposals(): Promise<ProposalV1[]>;
     /** Get Proposal Deposit account from its public key
      *
      * @param proposalDepositAccount The public key of the proposal deposit account
      * @returns Proposal Deposit account
      */
     getProposalDepositByPubkey(proposalDepositAccount: PublicKey): Promise<ProposalDeposit>;
+    /** Get all Proposal Deposit accounts
+     *
+     * @returns Proposal Deposit accounts
+     */
+    getAllProposalDeposits(): Promise<ProposalDeposit[]>;
     /** Get proposal deposit accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
@@ -5051,12 +5084,22 @@ declare class SplGovernance {
      * @returns Proposal Transaction account
      */
     getProposalTransactionByPubkey(proposalTransactionAccount: PublicKey): Promise<ProposalTransaction>;
+    /** Get all proposal instruction accounts (v1)
+     *
+     * @returns proposal instruction accounts (v1)
+     */
+    getAllProposalInstructions(): Promise<ProposalInstruction[]>;
     /** Get proposal transaction accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
      * @returns proposal transaction accounts for the given proposal
      */
     getProposalTransactionsByProposal(proposalAccount: PublicKey): Promise<ProposalTransaction[]>;
+    /** Get all proposal transaction accounts
+     *
+     * @returns proposal transaction accounts
+     */
+    getAllProposalTransactions(): Promise<ProposalTransaction[]>;
     /** Get Signatory Record from its public key
      *
      * @param signatoryRecordAddress The public key of the Signatory Record account
@@ -5076,6 +5119,11 @@ declare class SplGovernance {
      * @returns all signatory records for the given proposal
      */
     getSignatoryRecordsForProposal(proposalAccount: PublicKey): Promise<SignatoryRecord[]>;
+    /** Get all signatory records
+     *
+     * @returns all signatory records
+     */
+    getAllSignatoryRecords(): Promise<SignatoryRecord[]>;
     /** Get Vote Record from its public key
      *
      * @param voteRecordAddress The public key of the Vote Record account
@@ -5102,6 +5150,16 @@ declare class SplGovernance {
      * @returns all vote records for the given voter
      */
     getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean): Promise<VoteRecord[]>;
+    /** Get all vote records
+     *
+     * @returns all V2 vote records
+     */
+    getAllVoteRecords(): Promise<VoteRecord[]>;
+    /** Get all V1 vote records
+     *
+     * @returns all V1 vote records
+     */
+    getAllV1VoteRecords(): Promise<VoteRecordV1[]>;
     /** Get Chat Message from its public key
     *
     * @param chatMessageAddress The public key of the Chat Message account
@@ -5445,4 +5503,4 @@ declare class SplGovernance {
     postMessageInstruction(messageBody: string, messageType: "text" | "reaction", isReply: boolean, chatMessageAccount: PublicKey, realmAccount: PublicKey, governanceAccount: PublicKey, proposalAccount: PublicKey, tokenOwnerRecord: PublicKey, governanceAuthority: PublicKey, payer: PublicKey, replyTo?: PublicKey, voterWeightRecord?: PublicKey): Promise<TransactionInstruction>;
 }
 
-export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteType, type VoterWeightRecord };
+export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalInstruction, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteRecordV1, type VoteType, type VoterWeightRecord };
