@@ -5,6 +5,73 @@ The **Governance SDK** is a TypeScript-based library enabling developers to crea
 
 ---
 
+## **Setup Instructions**
+
+### **1. Install the package**
+```bash
+npm i governance-idl-sdk
+```
+
+### 2. Working with the SDK:
+
+i. Create an spl-governance instance:
+```
+import { SplGovernance } from "governance-idl-sdk";
+import { Connection } from "@solana/web3.js";
+
+const connection = new Connection("RPC_ENDPOINT");
+const splGovernance = new SplGovernance(
+   connection,
+   optionalProgramId // if custom governance program is used
+);
+```
+
+ii. Fetch spl-governance data:
+```
+// Fetch all Realms accounts (v2)
+const realms = await splGovernance.getAllRealms()
+
+// Fetch proposal from its public key
+const proposalAddress = new PublicKey("4HxrP3R6A6GcUv62VHG331gwJKNhrqHKF438oRztzz2r")
+const proposal = await splGovernance.getProposalByPubkey(proposalAddress)
+```
+
+iii. Create spl-governance instructions:
+```
+// Create a new Realm instruction
+ const createRealmIx = await splGovernance.createRealmInstruction(
+    realmName,
+    communityToken, // mint of the community token
+    1, // minimum community tokens required to create the governance
+    signer.publicKey, // realm authority
+    undefined, // optional weight source
+    councilToken, // mint of the council token
+    "liquid", // community token type
+    "membership" // council token type
+)
+
+// Deposit governing tokens instruction
+const depositForSignerTwoIx = await splGovernance.depositGoverningTokensInstruction(
+    realmAddress,
+    communityToken,
+    depositorAta,
+    depositor,
+    depositor,
+    depositor,
+    1
+)
+```
+iv. Working with spl-governance PDAs
+```
+// Derive Realm Address
+const realmAddress = splGovernance.pda.realmAccount({name: multisigName}).publicKey
+
+// Derive Governance address
+const governanceAddress = splGovernance.pda.governanceAccount({realmAccount: realmAddress, seed: governanceSeed}).publicKey
+```
+
+---
+
 ## **Repository Structure**
 
 
@@ -160,34 +227,6 @@ The `tests/` directory provides unit and integration tests to validate the SDKâ€
 2. **`rpc.ts`**  
    - **Description**: Includes tests related to Remote Procedure Calls (RPCs) used by the SDK. Likely tests interactions with Solana RPC endpoints, such as submitting transactions or fetching account data.
 
-
----
-
-## **Setup Instructions**
-
-### **1. Clone the Repository**
-```bash
-git clone https://github.com/Mythic-Project/governance-sdk.git
-cd governance-sdk
-```
-
-### **2. Install Dependencies**
-Ensure you have [Node.js](https://nodejs.org/) installed, then run:
-```bash
-npm install
-```
-
-### **3. Build the SDK**
-Compile TypeScript to JavaScript:
-```bash
-npm run build
-```
-
-### **4. Run Tests**
-Run the test suite to verify functionality:
-```bash
-npm test
-```
 
 ---
 
