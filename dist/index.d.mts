@@ -5182,6 +5182,11 @@ declare class SplGovernance {
      * @returns Voter Weight Record account
      */
     getVoterWeightRecord(voterWeightRecordAddress: PublicKey): Promise<VoterWeightRecord>;
+    /** Get Voter Weight Record
+     *
+     * @returns Voter Weight Record account
+     */
+    getAllVoterWeightRecords(): Promise<VoterWeightRecord[]>;
     /** Get Max Voter Weight Record
     *
     * @returns Voter Weight Record account

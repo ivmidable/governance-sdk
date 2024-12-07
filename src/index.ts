@@ -511,6 +511,14 @@ export class SplGovernance {
         return fetchAndDeserialize(this.connection, voterWeightRecordAddress, "voterWeightRecord", "addin")
     }
 
+    /** Get Voter Weight Record
+     * 
+     * @returns Voter Weight Record account
+     */
+    async getAllVoterWeightRecords(): Promise<VoterWeightRecord[]> {
+        return fetchMultipleAndDeserialize(this.connection, this.programId, "voterWeightRecord", "8riZd8mYDQk", undefined, undefined, undefined, "addin")
+    }
+
      /** Get Max Voter Weight Record
      * 
      * @returns Voter Weight Record account

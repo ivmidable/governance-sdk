@@ -6103,6 +6103,15 @@ var SplGovernance = class {
       return fetchAndDeserialize(this.connection, voterWeightRecordAddress, "voterWeightRecord", "addin");
     });
   }
+  /** Get Voter Weight Record
+   * 
+   * @returns Voter Weight Record account
+   */
+  getAllVoterWeightRecords() {
+    return __async(this, null, function* () {
+      return fetchMultipleAndDeserialize(this.connection, this.programId, "voterWeightRecord", "8riZd8mYDQk", void 0, void 0, void 0, "addin");
+    });
+  }
   /** Get Max Voter Weight Record
   * 
   * @returns Voter Weight Record account
