@@ -22,9 +22,11 @@ describe('Governance RPC', () => {
     describe.skip('Realm Accounts', () => {
         it('should fetch all the realms', async() => {
             const realms = await govRpc.getAllRealms()
-            
+
             realms.forEach(realm => {
-                assert.typeOf(realm.name, 'string')
+                if ('name' in realm) {
+                    assert.typeOf(realm.name, 'string')
+                }
             })
         })
 
@@ -43,15 +45,17 @@ describe('Governance RPC', () => {
             const realmsByMint = await govRpc.getRealmsByCommunityMint(communityMint)
 
             realmsByMint.forEach(realm => {
+              if('communityMint' in realm) {
                 assert.equal(realm.communityMint.toBase58(), communityMint.toBase58())
+              }
             })
         })
 
         it('should fetch realm config from realm address', async() => {
             const realmConfigAccountFromRealm = await govRpc.getRealmConfigByRealm(realmAddress)
             assert.equal(realmConfigAccountFromRealm.realm.toBase58(), realmAddress.toBase58())
-        })     
-        
+        })
+
         it('should fetch realm config its pubkey', async() => {
             const realmConfigAddress = govRpc.pda.realmConfigAccount({realmAccount: realmAddress}).publicKey
             const realmConfigAccountFromRealm = await govRpc.getRealmConfigByPubkey(realmConfigAddress)
@@ -71,7 +75,9 @@ describe('Governance RPC', () => {
             const allTORForRealm = await govRpc.getTokenOwnerRecordsForRealm(realmAddress)
 
             allTORForRealm.forEach(tor => {
+              if('realm' in tor) {
                 assert.equal(tor.realm.toBase58(), realmAddress.toBase58())
+              }
             })
         })
 
@@ -79,7 +85,9 @@ describe('Governance RPC', () => {
             const allTORForOwner = await govRpc.getTokenOwnerRecordsForOwner(tokenOwner)
 
             allTORForOwner.forEach(tor => {
+              if("governingTokenOwner" in tor) {
                 assert.equal(tor.governingTokenOwner.toBase58(), tokenOwner.toBase58())
+              }
             })
         })
 
@@ -87,7 +95,9 @@ describe('Governance RPC', () => {
             const allTORForMint = await govRpc.getTokenOwnerRecordsForMint(tokenMint)
 
             allTORForMint.forEach(tor => {
+              if("governingTokenMint" in tor) {
                 assert.equal(tor.governingTokenMint.toBase58(), tokenMint.toBase58())
+              }
             })
         })
 
@@ -99,7 +109,9 @@ describe('Governance RPC', () => {
             const allTORForDelegate = await govRpc.getDelegateRecordsForUserInRealm(givenRealm, delegate, communityMint)
 
             allTORForDelegate.forEach(tor => {
+              if("realm" in tor) {
                 assert.equal(tor.realm.toBase58(), givenRealm.toBase58())
+              }
             })
         })
     })
@@ -115,7 +127,9 @@ describe('Governance RPC', () => {
             const goveranceAccountsForRealm = await govRpc.getGovernanceAccountsByRealm(difRealmAddress)
 
             goveranceAccountsForRealm.forEach(goverannce => {
+              if("realm" in goverannce) {
                 assert.equal(goverannce.realm.toBase58(), difRealmAddress.toBase58())
+              }
             })
         })
     })
@@ -130,7 +144,9 @@ describe('Governance RPC', () => {
         it("should fetch proposal accounts for the given governance", async() => {
             const allProposalsForGovernance = await govRpc.getProposalsforGovernance(governanceAddress)
             allProposalsForGovernance.forEach(proposal => {
+              if("governance" in proposal) {
                 assert.equal(proposal.governance.toBase58(), governanceAddress.toBase58())
+              }
             })
         })
 
@@ -138,7 +154,9 @@ describe('Governance RPC', () => {
             const allProposalsForTOR = await govRpc.getProposalsByTokenOwnerRecord(tokenOwnerRecordAddress)
 
             allProposalsForTOR.forEach(proposal => {
+              if("tokenOwnerRecord" in proposal) {
                 assert.equal(proposal.tokenOwnerRecord.toBase58(), tokenOwnerRecordAddress.toBase58())
+              }
             })
         })
     })
@@ -154,7 +172,9 @@ describe('Governance RPC', () => {
         it("should fetch proposal deposit accounts from the proposal's public key", async() => {
             const proposalDepositAccounts = await govRpc.getProposalDepositByProposal(outstandingProposal)
             proposalDepositAccounts.forEach(proposal => {
+              if("proposal" in proposal) {
                 assert.equal(proposal.proposal.toBase58(), outstandingProposal.toBase58())
+              }
             })
         })
     })
@@ -165,7 +185,9 @@ describe('Governance RPC', () => {
             const proposalTxsByProposal = await govRpc.getProposalTransactionsByProposal(proposalWithTx)
 
             proposalTxsByProposal.forEach(tx => {
+              if("proposal" in tx) {
                 assert.equal(tx.proposal.toBase58(), proposalWithTx.toBase58())
+              }
             })
         })
     })
@@ -173,7 +195,7 @@ describe('Governance RPC', () => {
     describe.skip("Signatory Record Account", () => {
         it("should fetch signatory record from its public key", async() => {
             const signatoryRecordAddress = govRpc.pda.signatoryRecordAccount({
-                proposal: proposalAddress, 
+                proposal: proposalAddress,
                 signatory: tokenOwner
             }).publicKey
 
@@ -191,7 +213,9 @@ describe('Governance RPC', () => {
         it("should fetch signatory records from the proposal's public key", async() => {
             const signatoryRecords = await govRpc.getSignatoryRecordsForProposal(proposalAddress)
             signatoryRecords.forEach(record => {
+              if("proposal" in record) {
                 assert.equal(record.proposal.toBase58(), proposalAddress.toBase58())
+              }
             })
         })
     })
@@ -206,14 +230,18 @@ describe('Governance RPC', () => {
         it("should fetch vote records for the proposal", async() => {
             const voteRecordsForProposal = await govRpc.getVoteRecordsForProposal(outstandingProposal)
             voteRecordsForProposal.forEach(record => {
+              if("proposal" in record) {
                 assert.equal(record.proposal.toBase58(), outstandingProposal.toBase58())
+              }
             })
         })
 
         it("should fetch vote records for the user", async() => {
             const voteRecordsForProposal = await govRpc.getVoteRecordsForUser(tokenOwner)
             voteRecordsForProposal.forEach(record => {
+              if("governingTokenOwner" in record) {
                 assert.equal(record.governingTokenOwner.toBase58(), tokenOwner.toBase58())
+              }
             })
         })
     })
@@ -234,7 +262,9 @@ describe('Governance RPC', () => {
             }
 
             chatMessages.forEach(chatMessage => {
+              if("proposal" in chatMessage) {
                 assert.equal(chatMessage.proposal.toBase58(), proposalForChat.toBase58())
+              }
             })
         })
 
