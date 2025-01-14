@@ -5147,6 +5147,12 @@ declare class SplGovernance {
      * @returns Vote Record account or PublicKey[]
      */
     getVoteRecordByPubkey(voteRecordAddress: PublicKey): Promise<VoteRecord>;
+    /** Get Vote Record from its public key
+     *
+     * @param voteRecordAddresses public key arrat of Vote Record accounts
+     * @returns Vote Record accounts
+     */
+    getVoteRecordByAddresses(voteRecordAddresses: PublicKey[]): Promise<VoteRecord[]>;
     /** Get Vote Record account
     *
     * @param proposalAccount The public key of the Proposal account
@@ -5194,6 +5200,12 @@ declare class SplGovernance {
      * @returns Chat Message accounts or PublicKey[]
      */
     getChatMessagesByProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<ChatMessage[] | PublicKey[]>;
+    /** Get Chat Messages addresses
+     *
+     * @param chatMessageAddres The public key of the ChatMessage account
+     * @returns Chat Message accounts
+     */
+    getChatMessagesByAddress(chatMessageAddresses: PublicKey[]): Promise<ChatMessage[]>;
     /** Get all Chat Messages
      *
      * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.

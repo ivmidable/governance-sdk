@@ -5484,6 +5484,27 @@ function fetchAndDeserialize(connection, pubkey, name, programType) {
     }
   });
 }
+function fetchMultipleByAddressAndDeserialize(connection, addresses, name, programType) {
+  return __async(this, null, function* () {
+    if (addresses.length > 100) throw Error("getMultipleAccounts has a maximum of 100 accounts.");
+    const accounts = yield connection.getMultipleAccountsInfo(addresses);
+    if (accounts.length != addresses.length) throw Error("fetchMultipleByAddressAndDeserialize: accounts.length != addresses.length!");
+    const deserializeAccounts = accounts.map((acc, index) => {
+      if (acc != null && acc.data) {
+        try {
+          return __spreadProps(__spreadValues({}, deserialize(name, acc.data, addresses[index], programType)), {
+            balance: acc.lamports / LAMPORTS_PER_SOL
+          });
+        } catch (e) {
+          return;
+        }
+      } else {
+        throw Error("The account doesn't exist.");
+      }
+    });
+    return deserializeAccounts.filter((a) => a !== void 0);
+  });
+}
 function fetchMultipleAccounts(_0, _1, _2) {
   return __async(this, arguments, function* (connection, programId, name, options = { deserialize: true }) {
     const filters = [];
@@ -5978,6 +5999,16 @@ var SplGovernance = class {
       return fetchAndDeserialize(this.connection, voteRecordAddress, "voteRecordV2");
     });
   }
+  /** Get Vote Record from its public key
+   *
+   * @param voteRecordAddresses public key arrat of Vote Record accounts
+   * @returns Vote Record accounts
+   */
+  getVoteRecordByAddresses(voteRecordAddresses) {
+    return __async(this, null, function* () {
+      return fetchMultipleByAddressAndDeserialize(this.connection, voteRecordAddresses, "voteRecordV2");
+    });
+  }
   /** Get Vote Record account
   *
   * @param proposalAccount The public key of the Proposal account
@@ -6057,6 +6088,16 @@ var SplGovernance = class {
   getChatMessagesByProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
       return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, "chatMessage", { initialByte: "2", customOffset: [1], customOffsetAddress: [proposalAccount], programType: "chat", deserialize: deserialize2 });
+    });
+  }
+  /** Get Chat Messages addresses
+   *
+   * @param chatMessageAddres The public key of the ChatMessage account
+   * @returns Chat Message accounts
+   */
+  getChatMessagesByAddress(chatMessageAddresses) {
+    return __async(this, null, function* () {
+      return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, "chatMessage");
     });
   }
   /** Get all Chat Messages
