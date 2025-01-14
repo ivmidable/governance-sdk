@@ -1,19 +1,18 @@
 import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, clusterApiUrl, AccountMeta} from "@solana/web3.js";
 import {Program, Wallet, AnchorProvider} from "@coral-xyz/anchor";
 import BN from "bn.js";
-import {ChatIdl, GovernanceIdl} from "./idl/idl";
+import {GovernanceIdl} from "./idl/idl";
 import idl from "./idl/gov.json";
 import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
 import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MaxVoterWeightRecord, MintMaxVoteWeightSource, ProposalDeposit, ProposalInstruction, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteRecordV1, VoteType, VoterWeightRecord } from "./types";
 import * as govInstructions from "./instructions";
-import {fetchAndDeserialize, fetchMultipleAndDeserialize, fetchMultipleAndNotDeserialize} from "./account";
+import {fetchAndDeserialize, fetchMultipleAccounts } from "./account";
 
 export class SplGovernance {
     readonly programId: PublicKey;
     readonly connection: Connection;
     readonly program: Program<GovernanceIdl>;
-    readonly chat: Program<ChatIdl>;
     readonly pda: PdaClient;
     private readonly _provider: AnchorProvider;
 
@@ -25,7 +24,6 @@ export class SplGovernance {
         this.programId = programId ?? DEFAULT_PROGRAM_ID;
         this._provider = new AnchorProvider(this.connection, {} as Wallet, {commitment: "confirmed"});
         this.program = new Program<GovernanceIdl>(idl as GovernanceIdl, this.programId, this._provider);
-        this.chat = new Program<ChatIdl>(idl as ChatIdl, DEFAULT_CHAT_PROGRAM_ID, this._provider);
         this.pda = new PdaClient(this.programId);
     }
 
@@ -52,25 +50,27 @@ export class SplGovernance {
 
     /** Get all the realm accounts
      *
-     * @returns all Realm accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Realm accounts or PublicKey[]
      */
-    async getAllRealms(): Promise<RealmV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV2', 'H')
+    async getAllRealms(deserialize?:boolean): Promise<RealmV2[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'realmV2', { initialByte: 'H', deserialize });
     }
 
     /** Get Realm accounts from the community mint
      *
      * @param communityMint Mint address of the token used as the community token
-     * @returns Realms using the given token as the community mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realms using the given token as the community mint or PublicKey[]
      */
-    async getRealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV2', 'H', [1], [communityMint])
+    async getRealmsByCommunityMint(communityMint: PublicKey, deserialize?:boolean): Promise<RealmV2[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'realmV2', { initialByte: 'H', customOffset: [1], customOffsetAddress: [communityMint], deserialize });
     }
 
     /** Get realm account V1 from its public key
      *
      * @param realmAccount The public key of the realm account
-     * @returns Realm account
+     * @returns Realm account or PublicKey[]
      */
     async getRealmV1ByPubkey(realmAccount: PublicKey): Promise<RealmV1> {
         return fetchAndDeserialize(this.connection, realmAccount, 'realmV1')
@@ -79,7 +79,7 @@ export class SplGovernance {
     /** Get realm account V1 from the name
      *
      * @param name The name of the Realm
-     * @returns Realm account
+     * @returns Realm account or PublicKey[]
      */
     async getRealmV1ByName(name: string): Promise<RealmV1> {
         const realmAccount = this.pda.realmAccount({name}).publicKey
@@ -88,25 +88,27 @@ export class SplGovernance {
 
     /** Get all the V1 realm accounts
      *
-     * @returns all Realm accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Realm accounts or PublicKey[]
      */
-    async getAllV1Realms(): Promise<RealmV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV1', '2')
+    async getAllV1Realms(deserialize?:boolean): Promise<RealmV1[] | PublicKey[]> {
+        return fetchMultipleAccounts(this.connection, this.programId, 'realmV1', { initialByte: '2', deserialize});
     }
 
     /** Get V1 Realm accounts from the community mint
      *
      * @param communityMint Mint address of the token used as the community token
-     * @returns Realms using the given token as the community mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realms using the given token as the community mint or PublicKey[]
      */
-    async getV1RealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmV1', '2', [1], [communityMint])
+    async getV1RealmsByCommunityMint(communityMint: PublicKey, deserialize?:boolean): Promise<RealmV1[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'realmV1', { initialByte: '2', customOffset: [1], customOffsetAddress: [communityMint], deserialize });
     }
 
     /** Get Realm config account from its public key
      *
      * @param realmConfigAddress The public key of the Realm Config Account
-     * @returns Realm Config Account
+     * @returns Realm Config Account or PublicKey[]
      */
     async getRealmConfigByPubkey(realmConfigAddress: PublicKey): Promise<RealmConfig> {
         return fetchAndDeserialize(this.connection, realmConfigAddress, 'realmConfigAccount')
@@ -115,7 +117,7 @@ export class SplGovernance {
     /** Get Realm config account from the realm account's public key
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns Realm Config Account
+     * @returns Realm Config Account or PublicKey[]
      */
     async getRealmConfigByRealm(realmAccount: PublicKey): Promise<RealmConfig> {
         const realmConfigAddress = this.pda.realmConfigAccount({realmAccount}).publicKey
@@ -124,16 +126,17 @@ export class SplGovernance {
 
     /** Get all Realm config accounts
      *
-     * @returns Realm Config Accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realm Config Accounts or PublicKey[]
      */
-    async getAllRealmConfigs(): Promise<RealmConfig[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'realmConfigAccount', 'C',)
+    async getAllRealmConfigs(deserialize?:boolean): Promise<RealmConfig[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'realmConfigAccount', { initialByte: 'C', deserialize});
     }
 
     /** Get Token Owner Record Account from its public key
      *
      * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
-     * @returns Token Owner Record account
+     * @returns Token Owner Record account or PublicKey[]
      */
     async getTokenOwnerRecordByPubkey(tokenOwnerRecordAddress: PublicKey): Promise<TokenOwnerRecord> {
         return fetchAndDeserialize(this.connection, tokenOwnerRecordAddress, 'tokenOwnerRecordV2')
@@ -144,7 +147,7 @@ export class SplGovernance {
      * @param realmAccount The public key of the Realm Account
      * @param tokenOwner The public key of the owner
      * @param tokenMint The token address (either community mint or council mint)
-     * @returns Token Owner Record Account
+     * @returns Token Owner Record Account or PublicKey[]
      */
     async getTokenOwnerRecord(
         realmAccount: PublicKey,
@@ -160,45 +163,51 @@ export class SplGovernance {
     /** Get all the token owner records for the given realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Token Owner Records for the given realm account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given realm account or PublicKey[]
      */
-    async getTokenOwnerRecordsForRealm(realmAccount: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
+    async getTokenOwnerRecordsForRealm(realmAccount: PublicKey, deserialize?:boolean): Promise<TokenOwnerRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', customOffset: [1], customOffsetAddress: [realmAccount], deserialize });
     }
 
-    /** Get all the token owner record addresses for the given realm
-     *
-     * @param realmAccount The public key of the Realm Account
-     * @returns all Token Owner Record Addresses for the given realm account
-     */
-    async getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]> {
-        return fetchMultipleAndNotDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
-    }
+    // /** Get all the token owner record addresses for the given realm
+    //  *
+    //  * @param realmAccount The public key of the Realm Account
+    //  * @returns all Token Owner Record Addresses for the given realm account or PublicKey[]
+    //  */
+    // async getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]> {
+    //   return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', customOffset: [1], customOffsetAddress: [realmAccount] });
+
+    //     return fetchMultipleAndNotDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
+    // }
 
     /** Get all the token owner records for the given owner
      *
      * @param tokenOwner The public key of the user whose token owner records to fetch
-     * @returns all Token Owner Records for the given owner
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given owner or PublicKey[]
      */
-    async getTokenOwnerRecordsForOwner(tokenOwner: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [65], [tokenOwner])
+    async getTokenOwnerRecordsForOwner(tokenOwner: PublicKey, deserialize?:boolean): Promise<TokenOwnerRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', customOffset: [65], customOffsetAddress: [tokenOwner], deserialize });
     }
 
     /** Get all the token owner records for the given mint
      *
      * @param tokenMint Mint address of the token whose token owner records to fetch
-     * @returns all Token Owner Records for the given mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given mint or PublicKey[]
      */
-    async getTokenOwnerRecordsForMint(tokenMint: PublicKey): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [33], [tokenMint])
+    async getTokenOwnerRecordsForMint(tokenMint: PublicKey, deserialize?:boolean): Promise<TokenOwnerRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', customOffset: [33], customOffsetAddress: [tokenMint], deserialize });
     }
 
     /** Get all the token owner records
      *
-     * @returns all Token Owner Records accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records accounts or PublicKey[]
      */
-    async getAllTokenOwnerRecords(): Promise<TokenOwnerRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J')
+    async getAllTokenOwnerRecords(deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', deserialize });
     }
 
     /** Get all the token owner records with user as delegate in the given realm
@@ -206,30 +215,26 @@ export class SplGovernance {
      * @param realmAccount The public key of the Realm Account
      * @param delegateAddress The public key of the delegate
      * @param tokenMint (optional) the mint address
-     * @returns all Token Owner Records for the given realm account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given realm account or PublicKey[]
      */
     async getDelegateRecordsForUserInRealm(
         realmAccount: PublicKey,
         delegateAddress: PublicKey,
-        tokenMint?: PublicKey
-    ): Promise<TokenOwnerRecord[]> {
+        tokenMint?: PublicKey,
+        deserialize?:boolean,
+    ): Promise<TokenOwnerRecord[] | PublicKey[]> {
+
         const offsets = tokenMint ? [1, 33, 122] : [1, 122]
         const addresses = tokenMint ? [realmAccount, tokenMint, delegateAddress] : [realmAccount, delegateAddress]
 
-        return fetchMultipleAndDeserialize(
-            this.connection,
-            this.programId,
-            'tokenOwnerRecordV2',
-            'J',
-            offsets,
-            addresses
-        )
+        return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: 'J', customOffset: offsets, customOffsetAddress: addresses, deserialize });
     }
 
     /** Get Governance account from its public key
      *
      * @param governanceAccount The public key of the governance account
-     * @returns Governance account
+     * @returns Governance account or PublicKey[]
      */
     async getGovernanceAccountByPubkey(governanceAccount: PublicKey): Promise<GovernanceAccount> {
         return fetchAndDeserialize(this.connection, governanceAccount, 'governanceV2')
@@ -238,16 +243,17 @@ export class SplGovernance {
     /** Get all the governance accounts for the realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Governance accounts for the given Realm
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Governance accounts for the given Realm or PublicKey[]
      */
-    async getGovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceAccount[]> {
-        return await fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV2', undefined, [1], [realmAccount], 236)
+    async getGovernanceAccountsByRealm(realmAccount: PublicKey, deserialize?:boolean): Promise<GovernanceAccount[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'governanceV2', { customOffset: [1], customOffsetAddress: [realmAccount], accountSize:236, deserialize });
     }
 
     /** Get V1 Governance account from its public key
      *
      * @param governanceAccount The public key of the governance account
-     * @returns Governance account
+     * @returns Governance account or PublicKey[]
      */
     async getGovernanceAccountV1ByPubkey(governanceAccount: PublicKey): Promise<GovernanceV1> {
         return fetchAndDeserialize(this.connection, governanceAccount, 'governanceV1')
@@ -256,16 +262,17 @@ export class SplGovernance {
     /** Get all the V1 governance accounts for the realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Governance accounts for the given Realm
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Governance accounts or PublicKey[] for the given Realm
      */
-    async getV1GovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'governanceV1', '4', [1], [realmAccount])
+    async getV1GovernanceAccountsByRealm(realmAccount: PublicKey, deserialize?:boolean): Promise<GovernanceV1[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'governanceV1', { initialByte: '4', customOffset: [1], customOffsetAddress: [realmAccount], deserialize });
     }
 
     /** Get Proposal account from its public key
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns Proposal account
+     * @returns Proposal account or PublicKey[]
      */
     async getProposalByPubkey(proposalAccount: PublicKey): Promise<ProposalV2> {
         return fetchAndDeserialize(this.connection, proposalAccount, 'proposalV2')
@@ -275,48 +282,45 @@ export class SplGovernance {
      *
      * @param governanceAccount The public key of the Governance Account
      * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
-     * @returns all Proposal accounts for the given Governance
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Proposal accounts or PublicKey[] for the given Governance
      */
-    async getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean): Promise<ProposalV2[]> {
-        return fetchMultipleAndDeserialize(
-            this.connection,
-            this.programId,
-            'proposalV2',
-            'F',
-            onlyActive ? [1, 65] : [1],
-            onlyActive ? ['3', governanceAccount] : [governanceAccount]
-        )
+    async getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean, deserialize?:boolean): Promise<ProposalV2[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalV2', { initialByte: 'F', customOffset: onlyActive ? [1, 65] : [1], customOffsetAddress: onlyActive ? ['3', governanceAccount] : [governanceAccount], deserialize });
     }
 
     /** Get all the proposal accounts for a user in Realm
      *
      * @param tokenOwnerRecord The public key of the user's token owner record
-     * @returns all Proposal accounts for the given user
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Proposal accounts for the given user or PublicKey[]
      */
-    async getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey): Promise<ProposalV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F', [66], [tokenOwnerRecord])
+    async getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey, deserialize?:boolean): Promise<ProposalV2[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalV2', { initialByte: 'F', customOffset: [66], customOffsetAddress: [tokenOwnerRecord], deserialize });
     }
 
     /** Get all Proposals
      *
-     * @returns all V2 Proposals accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V2 Proposals accounts or PublicKey[]
      */
-    async getAllProposals(): Promise<ProposalV2[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV2', 'F')
+    async getAllProposals(deserialize?:boolean): Promise<ProposalV2[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalV2', { initialByte: 'F', deserialize });
     }
 
     /** Get all V1 Proposals
      *
-     * @returns all V1 Proposals accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V1 Proposals accounts or PublicKey[]
      */
-    async getAllV1Proposals(): Promise<ProposalV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalV1', '6')
+    async getAllV1Proposals(deserialize?:boolean): Promise<ProposalV1[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalV1', { initialByte: '6', deserialize });
     }
 
     /** Get Proposal Deposit account from its public key
      *
      * @param proposalDepositAccount The public key of the proposal deposit account
-     * @returns Proposal Deposit account
+     * @returns Proposal Deposit account or PublicKey[]
      */
     async getProposalDepositByPubkey(proposalDepositAccount: PublicKey): Promise<ProposalDeposit> {
         return fetchAndDeserialize(this.connection, proposalDepositAccount, 'proposalDeposit')
@@ -324,25 +328,27 @@ export class SplGovernance {
 
     /** Get all Proposal Deposit accounts
      *
-     * @returns Proposal Deposit accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Proposal Deposit accounts or PublicKey[]
      */
-    async getAllProposalDeposits(): Promise<ProposalDeposit[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalDeposit', 'Q')
+    async getAllProposalDeposits(deserialize?:boolean): Promise<ProposalDeposit[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalDeposit', { initialByte: 'Q', deserialize });
     }
 
     /** Get proposal deposit accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns proposal deposit accounts for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal deposit accounts for the given proposal or PublicKey[]
      */
-    async getProposalDepositByProposal(proposalAccount: PublicKey): Promise<ProposalDeposit[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalDeposit', 'Q', [1], [proposalAccount])
+    async getProposalDepositByProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<ProposalDeposit[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalDeposit', { initialByte: 'Q', customOffset: [1], customOffsetAddress: [proposalAccount], deserialize });
     }
 
     /** Get Proposal Transaction account from its public key
      *
      * @param proposalTransactionAccount The public key of the proposal transaction account
-     * @returns Proposal Transaction account
+     * @returns Proposal Transaction account or PublicKey[]
      */
     async getProposalTransactionByPubkey(proposalTransactionAccount: PublicKey): Promise<ProposalTransaction> {
         return fetchAndDeserialize(this.connection, proposalTransactionAccount, 'proposalTransactionV2')
@@ -350,33 +356,36 @@ export class SplGovernance {
 
     /** Get all proposal instruction accounts (v1)
      *
-     * @returns proposal instruction accounts (v1)
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal instruction accounts (v1) or PublicKey[]
      */
-    async getAllProposalInstructions(): Promise<ProposalInstruction[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalInstructionV1', '9')
+    async getAllProposalInstructions(deserialize?:boolean): Promise<ProposalInstruction[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalInstructionV1', { initialByte: '9', deserialize });
     }
 
     /** Get proposal transaction accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns proposal transaction accounts for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal transaction accounts for the given proposal or PublicKey[]
      */
-    async getProposalTransactionsByProposal(proposalAccount: PublicKey): Promise<ProposalTransaction[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalTransactionV2', 'E', [1], [proposalAccount])
+    async getProposalTransactionsByProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<ProposalTransaction[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalTransactionV2', { initialByte: 'E', customOffset: [1], customOffsetAddress: [proposalAccount], deserialize });
     }
 
     /** Get all proposal transaction accounts
      *
-     * @returns proposal transaction accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal transaction accounts or PublicKey[]
      */
-    async getAllProposalTransactions(): Promise<ProposalTransaction[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'proposalTransactionV2', 'E')
+    async getAllProposalTransactions(deserialize?:boolean): Promise<ProposalTransaction[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'proposalTransactionV2', { initialByte: 'E', deserialize });
     }
 
     /** Get Signatory Record from its public key
      *
      * @param signatoryRecordAddress The public key of the Signatory Record account
-     * @returns Signatory Record account
+     * @returns Signatory Record account or PublicKey[]
      */
     async getSignatoryRecordByPubkey(signatoryRecordAddress: PublicKey): Promise<SignatoryRecord> {
         return fetchAndDeserialize(this.connection, signatoryRecordAddress, 'signatoryRecordV2')
@@ -386,7 +395,7 @@ export class SplGovernance {
      *
      * @param proposalAccount The public key of the Proposal account
      * @param signatory The signer's public key
-     * @returns Signatory Record account
+     * @returns Signatory Record account or PublicKey[]
      */
     async getSignatoryRecord(
         proposalAccount: PublicKey,
@@ -399,24 +408,26 @@ export class SplGovernance {
     /** Get all signatory records for the proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns all signatory records for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all signatory records for the given proposal or PublicKey[]
      */
-    async getSignatoryRecordsForProposal(proposalAccount: PublicKey): Promise<SignatoryRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'signatoryRecordV2', 'P', [1], [proposalAccount])
+    async getSignatoryRecordsForProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<SignatoryRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'signatoryRecordV2', { initialByte: 'P', customOffset: [1], customOffsetAddress: [proposalAccount], deserialize });
     }
 
     /** Get all signatory records
      *
-     * @returns all signatory records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all signatory records or PublicKey[]
      */
-    async getAllSignatoryRecords(): Promise<SignatoryRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'signatoryRecordV2', 'P')
+    async getAllSignatoryRecords(deserialize?:boolean): Promise<SignatoryRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'signatoryRecordV2', { initialByte: 'P',  deserialize });
     }
 
     /** Get Vote Record from its public key
      *
      * @param voteRecordAddress The public key of the Vote Record account
-     * @returns Vote Record account
+     * @returns Vote Record account or PublicKey[]
      */
     async getVoteRecordByPubkey(voteRecordAddress: PublicKey): Promise<VoteRecord> {
         return fetchAndDeserialize(this.connection, voteRecordAddress, 'voteRecordV2')
@@ -426,7 +437,7 @@ export class SplGovernance {
      *
      * @param proposalAccount The public key of the Proposal account
      * @param tokenOwnerRecord The public key of the voter's token owner record
-     * @returns Vote Record account
+     * @returns Vote Record account or PublicKey[]
      */
      async getVoteRecord(
         proposalAccount: PublicKey,
@@ -440,49 +451,51 @@ export class SplGovernance {
     /** Get all vote records for the proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns all vote records for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all vote records for the given proposal or PublicKey[]
      */
-    async getVoteRecordsForProposal(proposalAccount: PublicKey): Promise<VoteRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D', [1], [proposalAccount])
+    async getVoteRecordsForProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<VoteRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'voteRecordV2', { initialByte: 'D', customOffset: [1], customOffsetAddress: [proposalAccount], deserialize });
     }
 
     /** Get all vote records for the voter
      *
      * @param voter The public key of the voter
      * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
-     * @returns all vote records for the given voter
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all vote records for the given voter or PublicKey[]
      */
-    async getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean) : Promise<VoteRecord[]> {
-        return fetchMultipleAndDeserialize(
-            this.connection,
-            this.programId,
-            'voteRecordV2',
-            'D',
-            unrelinquishedOnly ? [33,65] : [33],
-            unrelinquishedOnly ? [voter, '1'] : [voter]
-        )
+    async getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean, deserialize?:boolean) : Promise<VoteRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'voteRecordV2', {
+          initialByte: 'D',
+          customOffset: unrelinquishedOnly ? [33, 65] : [33],
+          customOffsetAddress: unrelinquishedOnly ? [voter, '1'] : [voter],
+          deserialize
+        });
     }
 
     /** Get all vote records
      *
-     * @returns all V2 vote records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V2 vote records or PublicKey[]
      */
-    async getAllVoteRecords(): Promise<VoteRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV2', 'D')
+    async getAllVoteRecords(deserialize?: boolean): Promise<VoteRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'voteRecordV2', { initialByte: 'D', deserialize });
     }
 
     /** Get all V1 vote records
      *
-     * @returns all V1 vote records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V1 vote records or PublicKey[]
      */
-    async getAllV1VoteRecords(): Promise<VoteRecordV1[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, 'voteRecordV1', '8')
+    async getAllV1VoteRecords(deserialize?: boolean): Promise<VoteRecordV1[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'voteRecordV1', { initialByte: '8', deserialize });
     }
 
      /** Get Chat Message from its public key
      *
      * @param chatMessageAddress The public key of the Chat Message account
-     * @returns Chat Message account
+     * @returns Chat Message account or PublicKey[]
      */
      async getChatMessageByPubkey(chatMessageAddress: PublicKey): Promise<ChatMessage> {
         return fetchAndDeserialize(this.connection, chatMessageAddress, 'chatMessage', "chat")
@@ -491,23 +504,25 @@ export class SplGovernance {
     /** Get Chat Messages for a proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns Chat Message accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Chat Message accounts or PublicKey[]
      */
-     async getChatMessagesByProposal(proposalAccount: PublicKey): Promise<ChatMessage[]> {
-        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', [1], [proposalAccount], undefined, "chat")
-    }
+     async getChatMessagesByProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<ChatMessage[] | PublicKey[]> {
+       return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', { initialByte: '2', customOffset: [1], customOffsetAddress: [proposalAccount], programType:"chat", deserialize });
+     }
 
     /** Get all Chat Messages
      *
-     * @returns Chat Message accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Chat Message accounts or PublicKey[]
      */
-    async getAllChatMessages(): Promise<ChatMessage[]> {
-        return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', '2', undefined, undefined, undefined, "chat")
+    async getAllChatMessages(deserialize?: boolean): Promise<ChatMessage[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', { initialByte: '2', programType: "chat", deserialize });
     }
 
     /** Get Voter Weight Record
      *
-     * @returns Voter Weight Record account
+     * @returns Voter Weight Record account or PublicKey[]
      */
     async getVoterWeightRecord(voterWeightRecordAddress: PublicKey): Promise<VoterWeightRecord> {
         return fetchAndDeserialize(this.connection, voterWeightRecordAddress, "voterWeightRecord", "addin")
@@ -515,10 +530,11 @@ export class SplGovernance {
 
     /** Get Voter Weight Record
      *
-     * @returns Voter Weight Record account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Voter Weight Record account or PublicKey[]
      */
-    async getAllVoterWeightRecords(): Promise<VoterWeightRecord[]> {
-        return fetchMultipleAndDeserialize(this.connection, this.programId, "voterWeightRecord", "8riZd8mYDQk", undefined, undefined, undefined, "addin")
+    async getAllVoterWeightRecords(deserialize?:boolean): Promise<VoterWeightRecord[] | PublicKey[]> {
+      return fetchMultipleAccounts(this.connection, this.programId, 'voterWeightRecord', { initialByte: '8riZd8mYDQk', programType:"addin", deserialize });
     }
 
      /** Get Max Voter Weight Record
