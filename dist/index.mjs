@@ -5484,22 +5484,20 @@ function fetchAndDeserialize(connection, pubkey, name, programType) {
     }
   });
 }
-function fetchMultipleAndDeserialize(connection, programId, name, initialByte, customOffset, customOffsetAddress, accountSize, programType) {
-  return __async(this, null, function* () {
+function fetchMultipleAccounts(_0, _1, _2) {
+  return __async(this, arguments, function* (connection, programId, name, options = { deserialize: true }) {
     const filters = [];
-    if (initialByte) {
-      filters.push(
-        {
-          memcmp: {
-            offset: 0,
-            bytes: initialByte
-          }
+    if (options.initialByte) {
+      filters.push({
+        memcmp: {
+          offset: 0,
+          bytes: options.initialByte
         }
-      );
+      });
     }
-    if (customOffset && customOffsetAddress) {
-      customOffset.forEach((offset, index) => {
-        const offsetValue = customOffsetAddress[index];
+    if (options.customOffset && options.customOffsetAddress) {
+      options.customOffset.forEach((offset, index) => {
+        const offsetValue = options.customOffsetAddress[index];
         filters.push({
           memcmp: {
             offset,
@@ -5508,71 +5506,36 @@ function fetchMultipleAndDeserialize(connection, programId, name, initialByte, c
         });
       });
     }
-    if (accountSize) {
-      filters.push(
-        {
-          dataSize: accountSize
-        }
-      );
+    if (options.accountSize) {
+      filters.push({
+        dataSize: options.accountSize
+      });
     }
-    const accounts = yield connection.getProgramAccounts(programId, {
-      filters
-    });
-    const deserializeAccounts = accounts.map((acc) => {
+    const getProgramAccountsConfig = { filters };
+    if (!options.deserialize) {
+      getProgramAccountsConfig.dataSlice = {
+        length: 0,
+        offset: 0
+      };
+    }
+    const accounts = yield connection.getProgramAccounts(programId, getProgramAccountsConfig);
+    if (!options.deserialize) {
+      return accounts.value.map((acc) => acc.pubkey);
+    }
+    const deserializedAccounts = accounts.value.map((acc) => {
       if (acc.account.data) {
         try {
-          return __spreadProps(__spreadValues({}, deserialize(name, acc.account.data, acc.pubkey, programType)), {
+          return __spreadProps(__spreadValues({}, deserialize(name, acc.account.data, acc.pubkey, options.programType)), {
             balance: acc.account.lamports / LAMPORTS_PER_SOL
           });
         } catch (e) {
-          return;
+          return void 0;
         }
       } else {
         throw Error("The account doesn't exist.");
       }
     });
-    return deserializeAccounts.filter((a) => a !== void 0);
-  });
-}
-function fetchMultipleAndNotDeserialize(connection, programId, name, initialByte, customOffset, customOffsetAddress, accountSize, programType) {
-  return __async(this, null, function* () {
-    const filters = [];
-    if (initialByte) {
-      filters.push(
-        {
-          memcmp: {
-            offset: 0,
-            bytes: initialByte
-          }
-        }
-      );
-    }
-    if (customOffset && customOffsetAddress) {
-      customOffset.forEach((offset, index) => {
-        const offsetValue = customOffsetAddress[index];
-        filters.push({
-          memcmp: {
-            offset,
-            bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
-          }
-        });
-      });
-    }
-    if (accountSize) {
-      filters.push(
-        {
-          dataSize: accountSize
-        }
-      );
-    }
-    const accounts = yield connection.getProgramAccounts(programId, {
-      filters,
-      dataSlice: {
-        length: 0,
-        offset: 0
-      }
-    });
-    return accounts.map((acc) => acc.pubkey);
+    return deserializedAccounts.filter((a) => a !== void 0);
   });
 }
 
@@ -5583,7 +5546,6 @@ var SplGovernance = class {
     this.programId = programId != null ? programId : DEFAULT_PROGRAM_ID;
     this._provider = new AnchorProvider2(this.connection, {}, { commitment: "confirmed" });
     this.program = new Program2(gov_default, this.programId, this._provider);
-    this.chat = new Program2(gov_default, DEFAULT_CHAT_PROGRAM_ID, this._provider);
     this.pda = new PdaClient(this.programId);
   }
   // GET APIs
@@ -5610,27 +5572,29 @@ var SplGovernance = class {
   }
   /** Get all the realm accounts
    *
-   * @returns all Realm accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Realm accounts or PublicKey[]
    */
-  getAllRealms() {
+  getAllRealms(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmV2", "H");
+      return fetchMultipleAccounts(this.connection, this.programId, "realmV2", { initialByte: "H", deserialize: deserialize2 });
     });
   }
   /** Get Realm accounts from the community mint
    *
    * @param communityMint Mint address of the token used as the community token
-   * @returns Realms using the given token as the community mint
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Realms using the given token as the community mint or PublicKey[]
    */
-  getRealmsByCommunityMint(communityMint) {
+  getRealmsByCommunityMint(communityMint, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmV2", "H", [1], [communityMint]);
+      return fetchMultipleAccounts(this.connection, this.programId, "realmV2", { initialByte: "H", customOffset: [1], customOffsetAddress: [communityMint], deserialize: deserialize2 });
     });
   }
   /** Get realm account V1 from its public key
    *
    * @param realmAccount The public key of the realm account
-   * @returns Realm account
+   * @returns Realm account or PublicKey[]
    */
   getRealmV1ByPubkey(realmAccount) {
     return __async(this, null, function* () {
@@ -5640,7 +5604,7 @@ var SplGovernance = class {
   /** Get realm account V1 from the name
    *
    * @param name The name of the Realm
-   * @returns Realm account
+   * @returns Realm account or PublicKey[]
    */
   getRealmV1ByName(name) {
     return __async(this, null, function* () {
@@ -5650,27 +5614,29 @@ var SplGovernance = class {
   }
   /** Get all the V1 realm accounts
    *
-   * @returns all Realm accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Realm accounts or PublicKey[]
    */
-  getAllV1Realms() {
+  getAllV1Realms(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmV1", "2");
+      return fetchMultipleAccounts(this.connection, this.programId, "realmV1", { initialByte: "2", deserialize: deserialize2 });
     });
   }
   /** Get V1 Realm accounts from the community mint
    *
    * @param communityMint Mint address of the token used as the community token
-   * @returns Realms using the given token as the community mint
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Realms using the given token as the community mint or PublicKey[]
    */
-  getV1RealmsByCommunityMint(communityMint) {
+  getV1RealmsByCommunityMint(communityMint, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmV1", "2", [1], [communityMint]);
+      return fetchMultipleAccounts(this.connection, this.programId, "realmV1", { initialByte: "2", customOffset: [1], customOffsetAddress: [communityMint], deserialize: deserialize2 });
     });
   }
   /** Get Realm config account from its public key
    *
    * @param realmConfigAddress The public key of the Realm Config Account
-   * @returns Realm Config Account
+   * @returns Realm Config Account or PublicKey[]
    */
   getRealmConfigByPubkey(realmConfigAddress) {
     return __async(this, null, function* () {
@@ -5680,7 +5646,7 @@ var SplGovernance = class {
   /** Get Realm config account from the realm account's public key
    *
    * @param realmAccount The public key of the Realm Account
-   * @returns Realm Config Account
+   * @returns Realm Config Account or PublicKey[]
    */
   getRealmConfigByRealm(realmAccount) {
     return __async(this, null, function* () {
@@ -5690,17 +5656,18 @@ var SplGovernance = class {
   }
   /** Get all Realm config accounts
    *
-   * @returns Realm Config Accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Realm Config Accounts or PublicKey[]
    */
-  getAllRealmConfigs() {
+  getAllRealmConfigs(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "realmConfigAccount", "C");
+      return fetchMultipleAccounts(this.connection, this.programId, "realmConfigAccount", { initialByte: "C", deserialize: deserialize2 });
     });
   }
   /** Get Token Owner Record Account from its public key
    *
    * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
-   * @returns Token Owner Record account
+   * @returns Token Owner Record account or PublicKey[]
    */
   getTokenOwnerRecordByPubkey(tokenOwnerRecordAddress) {
     return __async(this, null, function* () {
@@ -5712,7 +5679,7 @@ var SplGovernance = class {
    * @param realmAccount The public key of the Realm Account
    * @param tokenOwner The public key of the owner
    * @param tokenMint The token address (either community mint or council mint)
-   * @returns Token Owner Record Account
+   * @returns Token Owner Record Account or PublicKey[]
    */
   getTokenOwnerRecord(realmAccount, tokenOwner, tokenMint) {
     return __async(this, null, function* () {
@@ -5727,50 +5694,53 @@ var SplGovernance = class {
   /** Get all the token owner records for the given realm
    *
    * @param realmAccount The public key of the Realm Account
-   * @returns all Token Owner Records for the given realm account
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Token Owner Records for the given realm account or PublicKey[]
    */
-  getTokenOwnerRecordsForRealm(realmAccount) {
+  getTokenOwnerRecordsForRealm(realmAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "tokenOwnerRecordV2", { initialByte: "3", customOffset: [1], customOffsetAddress: [realmAccount], deserialize: deserialize2 });
     });
   }
-  /** Get all the token owner record addresses for the given realm
-   *
-   * @param realmAccount The public key of the Realm Account
-   * @returns all Token Owner Record Addresses for the given realm account
-   */
-  getTokenOwnerRecordAddressesForRealm(realmAccount) {
-    return __async(this, null, function* () {
-      return fetchMultipleAndNotDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
-    });
-  }
+  // /** Get all the token owner record addresses for the given realm
+  //  *
+  //  * @param realmAccount The public key of the Realm Account
+  //  * @returns all Token Owner Record Addresses for the given realm account or PublicKey[]
+  //  */
+  // async getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]> {
+  //   return fetchMultipleAccounts(this.connection, this.programId, 'tokenOwnerRecordV2', { initialByte: '3', customOffset: [1], customOffsetAddress: [realmAccount] });
+  //     return fetchMultipleAndNotDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
+  // }
   /** Get all the token owner records for the given owner
    *
    * @param tokenOwner The public key of the user whose token owner records to fetch
-   * @returns all Token Owner Records for the given owner
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Token Owner Records for the given owner or PublicKey[]
    */
-  getTokenOwnerRecordsForOwner(tokenOwner) {
+  getTokenOwnerRecordsForOwner(tokenOwner, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [65], [tokenOwner]);
+      return fetchMultipleAccounts(this.connection, this.programId, "tokenOwnerRecordV2", { initialByte: "3", customOffset: [65], customOffsetAddress: [tokenOwner], deserialize: deserialize2 });
     });
   }
   /** Get all the token owner records for the given mint
    *
    * @param tokenMint Mint address of the token whose token owner records to fetch
-   * @returns all Token Owner Records for the given mint
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Token Owner Records for the given mint or PublicKey[]
    */
-  getTokenOwnerRecordsForMint(tokenMint) {
+  getTokenOwnerRecordsForMint(tokenMint, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [33], [tokenMint]);
+      return fetchMultipleAccounts(this.connection, this.programId, "tokenOwnerRecordV2", { initialByte: "3", customOffset: [33], customOffsetAddress: [tokenMint], deserialize: deserialize2 });
     });
   }
   /** Get all the token owner records
    *
-   * @returns all Token Owner Records accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Token Owner Records accounts or PublicKey[]
    */
-  getAllTokenOwnerRecords() {
+  getAllTokenOwnerRecords(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J");
+      return fetchMultipleAccounts(this.connection, this.programId, "tokenOwnerRecordV2", { initialByte: "3", deserialize: deserialize2 });
     });
   }
   /** Get all the token owner records with user as delegate in the given realm
@@ -5778,26 +5748,20 @@ var SplGovernance = class {
    * @param realmAccount The public key of the Realm Account
    * @param delegateAddress The public key of the delegate
    * @param tokenMint (optional) the mint address
-   * @returns all Token Owner Records for the given realm account
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Token Owner Records for the given realm account or PublicKey[]
    */
-  getDelegateRecordsForUserInRealm(realmAccount, delegateAddress, tokenMint) {
+  getDelegateRecordsForUserInRealm(realmAccount, delegateAddress, tokenMint, deserialize2) {
     return __async(this, null, function* () {
       const offsets = tokenMint ? [1, 33, 122] : [1, 122];
       const addresses = tokenMint ? [realmAccount, tokenMint, delegateAddress] : [realmAccount, delegateAddress];
-      return fetchMultipleAndDeserialize(
-        this.connection,
-        this.programId,
-        "tokenOwnerRecordV2",
-        "J",
-        offsets,
-        addresses
-      );
+      return fetchMultipleAccounts(this.connection, this.programId, "tokenOwnerRecordV2", { initialByte: "J", customOffset: offsets, customOffsetAddress: addresses, deserialize: deserialize2 });
     });
   }
   /** Get Governance account from its public key
    *
    * @param governanceAccount The public key of the governance account
-   * @returns Governance account
+   * @returns Governance account or PublicKey[]
    */
   getGovernanceAccountByPubkey(governanceAccount) {
     return __async(this, null, function* () {
@@ -5807,17 +5771,18 @@ var SplGovernance = class {
   /** Get all the governance accounts for the realm
    *
    * @param realmAccount The public key of the Realm Account
-   * @returns all Governance accounts for the given Realm
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Governance accounts for the given Realm or PublicKey[]
    */
-  getGovernanceAccountsByRealm(realmAccount) {
+  getGovernanceAccountsByRealm(realmAccount, deserialize2) {
     return __async(this, null, function* () {
-      return yield fetchMultipleAndDeserialize(this.connection, this.programId, "governanceV2", void 0, [1], [realmAccount], 236);
+      return fetchMultipleAccounts(this.connection, this.programId, "governanceV2", { customOffset: [1], customOffsetAddress: [realmAccount], accountSize: 236, deserialize: deserialize2 });
     });
   }
   /** Get V1 Governance account from its public key
    *
    * @param governanceAccount The public key of the governance account
-   * @returns Governance account
+   * @returns Governance account or PublicKey[]
    */
   getGovernanceAccountV1ByPubkey(governanceAccount) {
     return __async(this, null, function* () {
@@ -5827,17 +5792,18 @@ var SplGovernance = class {
   /** Get all the V1 governance accounts for the realm
    *
    * @param realmAccount The public key of the Realm Account
-   * @returns all Governance accounts for the given Realm
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Governance accounts or PublicKey[] for the given Realm
    */
-  getV1GovernanceAccountsByRealm(realmAccount) {
+  getV1GovernanceAccountsByRealm(realmAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "governanceV1", "4", [1], [realmAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "governanceV1", { initialByte: "4", customOffset: [1], customOffsetAddress: [realmAccount], deserialize: deserialize2 });
     });
   }
   /** Get Proposal account from its public key
    *
    * @param proposalAccount The public key of the proposal account
-   * @returns Proposal account
+   * @returns Proposal account or PublicKey[]
    */
   getProposalByPubkey(proposalAccount) {
     return __async(this, null, function* () {
@@ -5848,52 +5814,49 @@ var SplGovernance = class {
    *
    * @param governanceAccount The public key of the Governance Account
    * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
-   * @returns all Proposal accounts for the given Governance
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Proposal accounts or PublicKey[] for the given Governance
    */
-  getProposalsforGovernance(governanceAccount, onlyActive) {
+  getProposalsforGovernance(governanceAccount, onlyActive, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(
-        this.connection,
-        this.programId,
-        "proposalV2",
-        "F",
-        onlyActive ? [1, 65] : [1],
-        onlyActive ? ["3", governanceAccount] : [governanceAccount]
-      );
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalV2", { initialByte: "F", customOffset: onlyActive ? [1, 65] : [1], customOffsetAddress: onlyActive ? ["3", governanceAccount] : [governanceAccount], deserialize: deserialize2 });
     });
   }
   /** Get all the proposal accounts for a user in Realm
    *
    * @param tokenOwnerRecord The public key of the user's token owner record
-   * @returns all Proposal accounts for the given user
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all Proposal accounts for the given user or PublicKey[]
    */
-  getProposalsByTokenOwnerRecord(tokenOwnerRecord) {
+  getProposalsByTokenOwnerRecord(tokenOwnerRecord, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV2", "F", [66], [tokenOwnerRecord]);
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalV2", { initialByte: "F", customOffset: [66], customOffsetAddress: [tokenOwnerRecord], deserialize: deserialize2 });
     });
   }
   /** Get all Proposals
    *
-   * @returns all V2 Proposals accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all V2 Proposals accounts or PublicKey[]
    */
-  getAllProposals() {
+  getAllProposals(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV2", "F");
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalV2", { initialByte: "F", deserialize: deserialize2 });
     });
   }
   /** Get all V1 Proposals
    *
-   * @returns all V1 Proposals accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all V1 Proposals accounts or PublicKey[]
    */
-  getAllV1Proposals() {
+  getAllV1Proposals(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalV1", "6");
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalV1", { initialByte: "6", deserialize: deserialize2 });
     });
   }
   /** Get Proposal Deposit account from its public key
    *
    * @param proposalDepositAccount The public key of the proposal deposit account
-   * @returns Proposal Deposit account
+   * @returns Proposal Deposit account or PublicKey[]
    */
   getProposalDepositByPubkey(proposalDepositAccount) {
     return __async(this, null, function* () {
@@ -5902,27 +5865,29 @@ var SplGovernance = class {
   }
   /** Get all Proposal Deposit accounts
    *
-   * @returns Proposal Deposit accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Proposal Deposit accounts or PublicKey[]
    */
-  getAllProposalDeposits() {
+  getAllProposalDeposits(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalDeposit", "Q");
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalDeposit", { initialByte: "Q", deserialize: deserialize2 });
     });
   }
   /** Get proposal deposit accounts for the given proposal
    *
    * @param proposalAccount The public key of the proposal account
-   * @returns proposal deposit accounts for the given proposal
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns proposal deposit accounts for the given proposal or PublicKey[]
    */
-  getProposalDepositByProposal(proposalAccount) {
+  getProposalDepositByProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalDeposit", "Q", [1], [proposalAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalDeposit", { initialByte: "Q", customOffset: [1], customOffsetAddress: [proposalAccount], deserialize: deserialize2 });
     });
   }
   /** Get Proposal Transaction account from its public key
    *
    * @param proposalTransactionAccount The public key of the proposal transaction account
-   * @returns Proposal Transaction account
+   * @returns Proposal Transaction account or PublicKey[]
    */
   getProposalTransactionByPubkey(proposalTransactionAccount) {
     return __async(this, null, function* () {
@@ -5931,36 +5896,39 @@ var SplGovernance = class {
   }
   /** Get all proposal instruction accounts (v1)
    *
-   * @returns proposal instruction accounts (v1)
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns proposal instruction accounts (v1) or PublicKey[]
    */
-  getAllProposalInstructions() {
+  getAllProposalInstructions(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalInstructionV1", "9");
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalInstructionV1", { initialByte: "9", deserialize: deserialize2 });
     });
   }
   /** Get proposal transaction accounts for the given proposal
    *
    * @param proposalAccount The public key of the proposal account
-   * @returns proposal transaction accounts for the given proposal
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns proposal transaction accounts for the given proposal or PublicKey[]
    */
-  getProposalTransactionsByProposal(proposalAccount) {
+  getProposalTransactionsByProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalTransactionV2", "E", [1], [proposalAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalTransactionV2", { initialByte: "E", customOffset: [1], customOffsetAddress: [proposalAccount], deserialize: deserialize2 });
     });
   }
   /** Get all proposal transaction accounts
    *
-   * @returns proposal transaction accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns proposal transaction accounts or PublicKey[]
    */
-  getAllProposalTransactions() {
+  getAllProposalTransactions(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "proposalTransactionV2", "E");
+      return fetchMultipleAccounts(this.connection, this.programId, "proposalTransactionV2", { initialByte: "E", deserialize: deserialize2 });
     });
   }
   /** Get Signatory Record from its public key
    *
    * @param signatoryRecordAddress The public key of the Signatory Record account
-   * @returns Signatory Record account
+   * @returns Signatory Record account or PublicKey[]
    */
   getSignatoryRecordByPubkey(signatoryRecordAddress) {
     return __async(this, null, function* () {
@@ -5971,7 +5939,7 @@ var SplGovernance = class {
    *
    * @param proposalAccount The public key of the Proposal account
    * @param signatory The signer's public key
-   * @returns Signatory Record account
+   * @returns Signatory Record account or PublicKey[]
    */
   getSignatoryRecord(proposalAccount, signatory) {
     return __async(this, null, function* () {
@@ -5982,26 +5950,28 @@ var SplGovernance = class {
   /** Get all signatory records for the proposal
    *
    * @param proposalAccount The public key of the Proposal account
-   * @returns all signatory records for the given proposal
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all signatory records for the given proposal or PublicKey[]
    */
-  getSignatoryRecordsForProposal(proposalAccount) {
+  getSignatoryRecordsForProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "signatoryRecordV2", "P", [1], [proposalAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "signatoryRecordV2", { initialByte: "P", customOffset: [1], customOffsetAddress: [proposalAccount], deserialize: deserialize2 });
     });
   }
   /** Get all signatory records
    *
-   * @returns all signatory records
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all signatory records or PublicKey[]
    */
-  getAllSignatoryRecords() {
+  getAllSignatoryRecords(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "signatoryRecordV2", "P");
+      return fetchMultipleAccounts(this.connection, this.programId, "signatoryRecordV2", { initialByte: "P", deserialize: deserialize2 });
     });
   }
   /** Get Vote Record from its public key
    *
    * @param voteRecordAddress The public key of the Vote Record account
-   * @returns Vote Record account
+   * @returns Vote Record account or PublicKey[]
    */
   getVoteRecordByPubkey(voteRecordAddress) {
     return __async(this, null, function* () {
@@ -6012,7 +5982,7 @@ var SplGovernance = class {
   *
   * @param proposalAccount The public key of the Proposal account
   * @param tokenOwnerRecord The public key of the voter's token owner record
-  * @returns Vote Record account
+  * @returns Vote Record account or PublicKey[]
   */
   getVoteRecord(proposalAccount, tokenOwnerRecord) {
     return __async(this, null, function* () {
@@ -6023,53 +5993,55 @@ var SplGovernance = class {
   /** Get all vote records for the proposal
    *
    * @param proposalAccount The public key of the Proposal account
-   * @returns all vote records for the given proposal
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all vote records for the given proposal or PublicKey[]
    */
-  getVoteRecordsForProposal(proposalAccount) {
+  getVoteRecordsForProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "voteRecordV2", "D", [1], [proposalAccount]);
+      return fetchMultipleAccounts(this.connection, this.programId, "voteRecordV2", { initialByte: "D", customOffset: [1], customOffsetAddress: [proposalAccount], deserialize: deserialize2 });
     });
   }
   /** Get all vote records for the voter
    *
    * @param voter The public key of the voter
    * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
-   * @returns all vote records for the given voter
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all vote records for the given voter or PublicKey[]
    */
-  getVoteRecordsForUser(voter, unrelinquishedOnly) {
+  getVoteRecordsForUser(voter, unrelinquishedOnly, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(
-        this.connection,
-        this.programId,
-        "voteRecordV2",
-        "D",
-        unrelinquishedOnly ? [33, 65] : [33],
-        unrelinquishedOnly ? [voter, "1"] : [voter]
-      );
+      return fetchMultipleAccounts(this.connection, this.programId, "voteRecordV2", {
+        initialByte: "D",
+        customOffset: unrelinquishedOnly ? [33, 65] : [33],
+        customOffsetAddress: unrelinquishedOnly ? [voter, "1"] : [voter],
+        deserialize: deserialize2
+      });
     });
   }
   /** Get all vote records
    *
-   * @returns all V2 vote records
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all V2 vote records or PublicKey[]
    */
-  getAllVoteRecords() {
+  getAllVoteRecords(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "voteRecordV2", "D");
+      return fetchMultipleAccounts(this.connection, this.programId, "voteRecordV2", { initialByte: "D", deserialize: deserialize2 });
     });
   }
   /** Get all V1 vote records
    *
-   * @returns all V1 vote records
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns all V1 vote records or PublicKey[]
    */
-  getAllV1VoteRecords() {
+  getAllV1VoteRecords(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "voteRecordV1", "8");
+      return fetchMultipleAccounts(this.connection, this.programId, "voteRecordV1", { initialByte: "8", deserialize: deserialize2 });
     });
   }
   /** Get Chat Message from its public key
   *
   * @param chatMessageAddress The public key of the Chat Message account
-  * @returns Chat Message account
+  * @returns Chat Message account or PublicKey[]
   */
   getChatMessageByPubkey(chatMessageAddress) {
     return __async(this, null, function* () {
@@ -6079,25 +6051,27 @@ var SplGovernance = class {
   /** Get Chat Messages for a proposal
    *
    * @param proposalAccount The public key of the Proposal account
-   * @returns Chat Message accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Chat Message accounts or PublicKey[]
    */
-  getChatMessagesByProposal(proposalAccount) {
+  getChatMessagesByProposal(proposalAccount, deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, "chatMessage", "2", [1], [proposalAccount], void 0, "chat");
+      return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, "chatMessage", { initialByte: "2", customOffset: [1], customOffsetAddress: [proposalAccount], programType: "chat", deserialize: deserialize2 });
     });
   }
   /** Get all Chat Messages
    *
-   * @returns Chat Message accounts
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Chat Message accounts or PublicKey[]
    */
-  getAllChatMessages() {
+  getAllChatMessages(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, DEFAULT_CHAT_PROGRAM_ID, "chatMessage", "2", void 0, void 0, void 0, "chat");
+      return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, "chatMessage", { initialByte: "2", programType: "chat", deserialize: deserialize2 });
     });
   }
   /** Get Voter Weight Record
    *
-   * @returns Voter Weight Record account
+   * @returns Voter Weight Record account or PublicKey[]
    */
   getVoterWeightRecord(voterWeightRecordAddress) {
     return __async(this, null, function* () {
@@ -6106,11 +6080,12 @@ var SplGovernance = class {
   }
   /** Get Voter Weight Record
    *
-   * @returns Voter Weight Record account
+   * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+   * @returns Voter Weight Record account or PublicKey[]
    */
-  getAllVoterWeightRecords() {
+  getAllVoterWeightRecords(deserialize2) {
     return __async(this, null, function* () {
-      return fetchMultipleAndDeserialize(this.connection, this.programId, "voterWeightRecord", "8riZd8mYDQk", void 0, void 0, void 0, "addin");
+      return fetchMultipleAccounts(this.connection, this.programId, "voterWeightRecord", { initialByte: "8riZd8mYDQk", programType: "addin", deserialize: deserialize2 });
     });
   }
   /** Get Max Voter Weight Record

@@ -4891,7 +4891,6 @@ declare class SplGovernance {
     readonly programId: PublicKey;
     readonly connection: Connection;
     readonly program: Program<GovernanceIdl>;
-    readonly chat: Program<ChatIdl>;
     readonly pda: PdaClient;
     private readonly _provider;
     constructor(connection: Connection, programId?: PublicKey);
@@ -4909,59 +4908,64 @@ declare class SplGovernance {
     getRealmByName(name: string): Promise<RealmV2>;
     /** Get all the realm accounts
      *
-     * @returns all Realm accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Realm accounts or PublicKey[]
      */
-    getAllRealms(): Promise<RealmV2[]>;
+    getAllRealms(deserialize?: boolean): Promise<RealmV2[] | PublicKey[]>;
     /** Get Realm accounts from the community mint
      *
      * @param communityMint Mint address of the token used as the community token
-     * @returns Realms using the given token as the community mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realms using the given token as the community mint or PublicKey[]
      */
-    getRealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV2[]>;
+    getRealmsByCommunityMint(communityMint: PublicKey, deserialize?: boolean): Promise<RealmV2[] | PublicKey[]>;
     /** Get realm account V1 from its public key
      *
      * @param realmAccount The public key of the realm account
-     * @returns Realm account
+     * @returns Realm account or PublicKey[]
      */
     getRealmV1ByPubkey(realmAccount: PublicKey): Promise<RealmV1>;
     /** Get realm account V1 from the name
      *
      * @param name The name of the Realm
-     * @returns Realm account
+     * @returns Realm account or PublicKey[]
      */
     getRealmV1ByName(name: string): Promise<RealmV1>;
     /** Get all the V1 realm accounts
      *
-     * @returns all Realm accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Realm accounts or PublicKey[]
      */
-    getAllV1Realms(): Promise<RealmV1[]>;
+    getAllV1Realms(deserialize?: boolean): Promise<RealmV1[] | PublicKey[]>;
     /** Get V1 Realm accounts from the community mint
      *
      * @param communityMint Mint address of the token used as the community token
-     * @returns Realms using the given token as the community mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realms using the given token as the community mint or PublicKey[]
      */
-    getV1RealmsByCommunityMint(communityMint: PublicKey): Promise<RealmV1[]>;
+    getV1RealmsByCommunityMint(communityMint: PublicKey, deserialize?: boolean): Promise<RealmV1[] | PublicKey[]>;
     /** Get Realm config account from its public key
      *
      * @param realmConfigAddress The public key of the Realm Config Account
-     * @returns Realm Config Account
+     * @returns Realm Config Account or PublicKey[]
      */
     getRealmConfigByPubkey(realmConfigAddress: PublicKey): Promise<RealmConfig>;
     /** Get Realm config account from the realm account's public key
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns Realm Config Account
+     * @returns Realm Config Account or PublicKey[]
      */
     getRealmConfigByRealm(realmAccount: PublicKey): Promise<RealmConfig>;
     /** Get all Realm config accounts
      *
-     * @returns Realm Config Accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Realm Config Accounts or PublicKey[]
      */
-    getAllRealmConfigs(): Promise<RealmConfig[]>;
+    getAllRealmConfigs(deserialize?: boolean): Promise<RealmConfig[] | PublicKey[]>;
     /** Get Token Owner Record Account from its public key
      *
      * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
-     * @returns Token Owner Record account
+     * @returns Token Owner Record account or PublicKey[]
      */
     getTokenOwnerRecordByPubkey(tokenOwnerRecordAddress: PublicKey): Promise<TokenOwnerRecord>;
     /** Get Token Owner Record Account
@@ -4969,225 +4973,244 @@ declare class SplGovernance {
      * @param realmAccount The public key of the Realm Account
      * @param tokenOwner The public key of the owner
      * @param tokenMint The token address (either community mint or council mint)
-     * @returns Token Owner Record Account
+     * @returns Token Owner Record Account or PublicKey[]
      */
     getTokenOwnerRecord(realmAccount: PublicKey, tokenOwner: PublicKey, tokenMint: PublicKey): Promise<TokenOwnerRecord>;
     /** Get all the token owner records for the given realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Token Owner Records for the given realm account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given realm account or PublicKey[]
      */
-    getTokenOwnerRecordsForRealm(realmAccount: PublicKey): Promise<TokenOwnerRecord[]>;
-    /** Get all the token owner record addresses for the given realm
-     *
-     * @param realmAccount The public key of the Realm Account
-     * @returns all Token Owner Record Addresses for the given realm account
-     */
-    getTokenOwnerRecordAddressesForRealm(realmAccount: PublicKey): Promise<PublicKey[]>;
+    getTokenOwnerRecordsForRealm(realmAccount: PublicKey, deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]>;
     /** Get all the token owner records for the given owner
      *
      * @param tokenOwner The public key of the user whose token owner records to fetch
-     * @returns all Token Owner Records for the given owner
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given owner or PublicKey[]
      */
-    getTokenOwnerRecordsForOwner(tokenOwner: PublicKey): Promise<TokenOwnerRecord[]>;
+    getTokenOwnerRecordsForOwner(tokenOwner: PublicKey, deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]>;
     /** Get all the token owner records for the given mint
      *
      * @param tokenMint Mint address of the token whose token owner records to fetch
-     * @returns all Token Owner Records for the given mint
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given mint or PublicKey[]
      */
-    getTokenOwnerRecordsForMint(tokenMint: PublicKey): Promise<TokenOwnerRecord[]>;
+    getTokenOwnerRecordsForMint(tokenMint: PublicKey, deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]>;
     /** Get all the token owner records
      *
-     * @returns all Token Owner Records accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records accounts or PublicKey[]
      */
-    getAllTokenOwnerRecords(): Promise<TokenOwnerRecord[]>;
+    getAllTokenOwnerRecords(deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]>;
     /** Get all the token owner records with user as delegate in the given realm
      *
      * @param realmAccount The public key of the Realm Account
      * @param delegateAddress The public key of the delegate
      * @param tokenMint (optional) the mint address
-     * @returns all Token Owner Records for the given realm account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Token Owner Records for the given realm account or PublicKey[]
      */
-    getDelegateRecordsForUserInRealm(realmAccount: PublicKey, delegateAddress: PublicKey, tokenMint?: PublicKey): Promise<TokenOwnerRecord[]>;
+    getDelegateRecordsForUserInRealm(realmAccount: PublicKey, delegateAddress: PublicKey, tokenMint?: PublicKey, deserialize?: boolean): Promise<TokenOwnerRecord[] | PublicKey[]>;
     /** Get Governance account from its public key
      *
      * @param governanceAccount The public key of the governance account
-     * @returns Governance account
+     * @returns Governance account or PublicKey[]
      */
     getGovernanceAccountByPubkey(governanceAccount: PublicKey): Promise<GovernanceAccount>;
     /** Get all the governance accounts for the realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Governance accounts for the given Realm
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Governance accounts for the given Realm or PublicKey[]
      */
-    getGovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceAccount[]>;
+    getGovernanceAccountsByRealm(realmAccount: PublicKey, deserialize?: boolean): Promise<GovernanceAccount[] | PublicKey[]>;
     /** Get V1 Governance account from its public key
      *
      * @param governanceAccount The public key of the governance account
-     * @returns Governance account
+     * @returns Governance account or PublicKey[]
      */
     getGovernanceAccountV1ByPubkey(governanceAccount: PublicKey): Promise<GovernanceV1>;
     /** Get all the V1 governance accounts for the realm
      *
      * @param realmAccount The public key of the Realm Account
-     * @returns all Governance accounts for the given Realm
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Governance accounts or PublicKey[] for the given Realm
      */
-    getV1GovernanceAccountsByRealm(realmAccount: PublicKey): Promise<GovernanceV1[]>;
+    getV1GovernanceAccountsByRealm(realmAccount: PublicKey, deserialize?: boolean): Promise<GovernanceV1[] | PublicKey[]>;
     /** Get Proposal account from its public key
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns Proposal account
+     * @returns Proposal account or PublicKey[]
      */
     getProposalByPubkey(proposalAccount: PublicKey): Promise<ProposalV2>;
     /** Get all the proposal accounts for the Governance
      *
      * @param governanceAccount The public key of the Governance Account
      * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
-     * @returns all Proposal accounts for the given Governance
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Proposal accounts or PublicKey[] for the given Governance
      */
-    getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean): Promise<ProposalV2[]>;
+    getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean, deserialize?: boolean): Promise<ProposalV2[] | PublicKey[]>;
     /** Get all the proposal accounts for a user in Realm
      *
      * @param tokenOwnerRecord The public key of the user's token owner record
-     * @returns all Proposal accounts for the given user
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all Proposal accounts for the given user or PublicKey[]
      */
-    getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey): Promise<ProposalV2[]>;
+    getProposalsByTokenOwnerRecord(tokenOwnerRecord: PublicKey, deserialize?: boolean): Promise<ProposalV2[] | PublicKey[]>;
     /** Get all Proposals
      *
-     * @returns all V2 Proposals accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V2 Proposals accounts or PublicKey[]
      */
-    getAllProposals(): Promise<ProposalV2[]>;
+    getAllProposals(deserialize?: boolean): Promise<ProposalV2[] | PublicKey[]>;
     /** Get all V1 Proposals
      *
-     * @returns all V1 Proposals accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V1 Proposals accounts or PublicKey[]
      */
-    getAllV1Proposals(): Promise<ProposalV1[]>;
+    getAllV1Proposals(deserialize?: boolean): Promise<ProposalV1[] | PublicKey[]>;
     /** Get Proposal Deposit account from its public key
      *
      * @param proposalDepositAccount The public key of the proposal deposit account
-     * @returns Proposal Deposit account
+     * @returns Proposal Deposit account or PublicKey[]
      */
     getProposalDepositByPubkey(proposalDepositAccount: PublicKey): Promise<ProposalDeposit>;
     /** Get all Proposal Deposit accounts
      *
-     * @returns Proposal Deposit accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Proposal Deposit accounts or PublicKey[]
      */
-    getAllProposalDeposits(): Promise<ProposalDeposit[]>;
+    getAllProposalDeposits(deserialize?: boolean): Promise<ProposalDeposit[] | PublicKey[]>;
     /** Get proposal deposit accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns proposal deposit accounts for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal deposit accounts for the given proposal or PublicKey[]
      */
-    getProposalDepositByProposal(proposalAccount: PublicKey): Promise<ProposalDeposit[]>;
+    getProposalDepositByProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<ProposalDeposit[] | PublicKey[]>;
     /** Get Proposal Transaction account from its public key
      *
      * @param proposalTransactionAccount The public key of the proposal transaction account
-     * @returns Proposal Transaction account
+     * @returns Proposal Transaction account or PublicKey[]
      */
     getProposalTransactionByPubkey(proposalTransactionAccount: PublicKey): Promise<ProposalTransaction>;
     /** Get all proposal instruction accounts (v1)
      *
-     * @returns proposal instruction accounts (v1)
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal instruction accounts (v1) or PublicKey[]
      */
-    getAllProposalInstructions(): Promise<ProposalInstruction[]>;
+    getAllProposalInstructions(deserialize?: boolean): Promise<ProposalInstruction[] | PublicKey[]>;
     /** Get proposal transaction accounts for the given proposal
      *
      * @param proposalAccount The public key of the proposal account
-     * @returns proposal transaction accounts for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal transaction accounts for the given proposal or PublicKey[]
      */
-    getProposalTransactionsByProposal(proposalAccount: PublicKey): Promise<ProposalTransaction[]>;
+    getProposalTransactionsByProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<ProposalTransaction[] | PublicKey[]>;
     /** Get all proposal transaction accounts
      *
-     * @returns proposal transaction accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns proposal transaction accounts or PublicKey[]
      */
-    getAllProposalTransactions(): Promise<ProposalTransaction[]>;
+    getAllProposalTransactions(deserialize?: boolean): Promise<ProposalTransaction[] | PublicKey[]>;
     /** Get Signatory Record from its public key
      *
      * @param signatoryRecordAddress The public key of the Signatory Record account
-     * @returns Signatory Record account
+     * @returns Signatory Record account or PublicKey[]
      */
     getSignatoryRecordByPubkey(signatoryRecordAddress: PublicKey): Promise<SignatoryRecord>;
     /** Get Signatory Record account
      *
      * @param proposalAccount The public key of the Proposal account
      * @param signatory The signer's public key
-     * @returns Signatory Record account
+     * @returns Signatory Record account or PublicKey[]
      */
     getSignatoryRecord(proposalAccount: PublicKey, signatory: PublicKey): Promise<SignatoryRecord>;
     /** Get all signatory records for the proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns all signatory records for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all signatory records for the given proposal or PublicKey[]
      */
-    getSignatoryRecordsForProposal(proposalAccount: PublicKey): Promise<SignatoryRecord[]>;
+    getSignatoryRecordsForProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<SignatoryRecord[] | PublicKey[]>;
     /** Get all signatory records
      *
-     * @returns all signatory records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all signatory records or PublicKey[]
      */
-    getAllSignatoryRecords(): Promise<SignatoryRecord[]>;
+    getAllSignatoryRecords(deserialize?: boolean): Promise<SignatoryRecord[] | PublicKey[]>;
     /** Get Vote Record from its public key
      *
      * @param voteRecordAddress The public key of the Vote Record account
-     * @returns Vote Record account
+     * @returns Vote Record account or PublicKey[]
      */
     getVoteRecordByPubkey(voteRecordAddress: PublicKey): Promise<VoteRecord>;
     /** Get Vote Record account
     *
     * @param proposalAccount The public key of the Proposal account
     * @param tokenOwnerRecord The public key of the voter's token owner record
-    * @returns Vote Record account
+    * @returns Vote Record account or PublicKey[]
     */
     getVoteRecord(proposalAccount: PublicKey, tokenOwnerRecord: PublicKey): Promise<VoteRecord>;
     /** Get all vote records for the proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns all vote records for the given proposal
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all vote records for the given proposal or PublicKey[]
      */
-    getVoteRecordsForProposal(proposalAccount: PublicKey): Promise<VoteRecord[]>;
+    getVoteRecordsForProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<VoteRecord[] | PublicKey[]>;
     /** Get all vote records for the voter
      *
      * @param voter The public key of the voter
      * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
-     * @returns all vote records for the given voter
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all vote records for the given voter or PublicKey[]
      */
-    getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean): Promise<VoteRecord[]>;
+    getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean, deserialize?: boolean): Promise<VoteRecord[] | PublicKey[]>;
     /** Get all vote records
      *
-     * @returns all V2 vote records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V2 vote records or PublicKey[]
      */
-    getAllVoteRecords(): Promise<VoteRecord[]>;
+    getAllVoteRecords(deserialize?: boolean): Promise<VoteRecord[] | PublicKey[]>;
     /** Get all V1 vote records
      *
-     * @returns all V1 vote records
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns all V1 vote records or PublicKey[]
      */
-    getAllV1VoteRecords(): Promise<VoteRecordV1[]>;
+    getAllV1VoteRecords(deserialize?: boolean): Promise<VoteRecordV1[] | PublicKey[]>;
     /** Get Chat Message from its public key
     *
     * @param chatMessageAddress The public key of the Chat Message account
-    * @returns Chat Message account
+    * @returns Chat Message account or PublicKey[]
     */
     getChatMessageByPubkey(chatMessageAddress: PublicKey): Promise<ChatMessage>;
     /** Get Chat Messages for a proposal
      *
      * @param proposalAccount The public key of the Proposal account
-     * @returns Chat Message accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Chat Message accounts or PublicKey[]
      */
-    getChatMessagesByProposal(proposalAccount: PublicKey): Promise<ChatMessage[]>;
+    getChatMessagesByProposal(proposalAccount: PublicKey, deserialize?: boolean): Promise<ChatMessage[] | PublicKey[]>;
     /** Get all Chat Messages
      *
-     * @returns Chat Message accounts
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Chat Message accounts or PublicKey[]
      */
-    getAllChatMessages(): Promise<ChatMessage[]>;
+    getAllChatMessages(deserialize?: boolean): Promise<ChatMessage[] | PublicKey[]>;
     /** Get Voter Weight Record
      *
-     * @returns Voter Weight Record account
+     * @returns Voter Weight Record account or PublicKey[]
      */
     getVoterWeightRecord(voterWeightRecordAddress: PublicKey): Promise<VoterWeightRecord>;
     /** Get Voter Weight Record
      *
-     * @returns Voter Weight Record account
+     * @param deserialize (optional) If true, only return pubkeys. If false, will return full account data.
+     * @returns Voter Weight Record account or PublicKey[]
      */
-    getAllVoterWeightRecords(): Promise<VoterWeightRecord[]>;
+    getAllVoterWeightRecords(deserialize?: boolean): Promise<VoterWeightRecord[] | PublicKey[]>;
     /** Get Max Voter Weight Record
     *
     * @returns Voter Weight Record account
