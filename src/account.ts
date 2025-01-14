@@ -65,60 +65,6 @@ export async function fetchMultipleByAddressAndDeserialize(
   return deserializeAccounts.filter(a => a !== undefined)
 }
 
-// export async function fetchMultipleAndNotDeserialize(
-//     connection: Connection,
-//     programId: PublicKey,
-//     name: string,
-//     initialByte?: string,
-//     customOffset?: number[],
-//     customOffsetAddress?: (PublicKey | string)[],
-//     accountSize?: number,
-//     programType?: "chat" | "addin"
-// ) {
-//     const filters = [];
-
-//     if (initialByte) {
-//         filters.push(
-//             {
-//                 memcmp: {
-//                     offset: 0,
-//                     bytes: initialByte
-//                 }
-//             }
-//         )
-//     }
-
-//     if (customOffset && customOffsetAddress) {
-//         customOffset.forEach((offset,index) => {
-//             const offsetValue = customOffsetAddress[index]
-
-//             filters.push({
-//                 memcmp: {
-//                     offset,
-//                     bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
-//                 }
-//             })
-//         })
-//     }
-
-//     if (accountSize) {
-//         filters.push(
-//             {
-//                 dataSize: accountSize
-//               },
-//         )
-//     }
-
-//     const accounts = await connection.getProgramAccounts(programId, {
-//         filters,
-//         dataSlice: {
-//             length: 0,
-//             offset: 0
-//         }
-//     })
-
-//     return accounts.map(acc => acc.pubkey)
-// }
 
 export async function fetchMultipleAccounts(
     connection: Connection,

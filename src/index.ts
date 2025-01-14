@@ -7,7 +7,7 @@ import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
 import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MaxVoterWeightRecord, MintMaxVoteWeightSource, ProposalDeposit, ProposalInstruction, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteRecordV1, VoteType, VoterWeightRecord } from "./types";
 import * as govInstructions from "./instructions";
-import {fetchAndDeserialize, fetchMultipleAccounts } from "./account";
+import {fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize } from "./account";
 
 export class SplGovernance {
     readonly programId: PublicKey;
@@ -433,6 +433,16 @@ export class SplGovernance {
         return fetchAndDeserialize(this.connection, voteRecordAddress, 'voteRecordV2')
     }
 
+
+    /** Get Vote Record from its public key
+     *
+     * @param voteRecordAddresses public key arrat of Vote Record accounts
+     * @returns Vote Record accounts
+     */
+    async getVoteRecordByAddresses(voteRecordAddresses: PublicKey[]) : Promise<VoteRecord[]> {
+      return fetchMultipleByAddressAndDeserialize(this.connection, voteRecordAddresses, 'voteRecordV2')
+    }
+
      /** Get Vote Record account
      *
      * @param proposalAccount The public key of the Proposal account
@@ -510,6 +520,17 @@ export class SplGovernance {
      async getChatMessagesByProposal(proposalAccount: PublicKey, deserialize?:boolean): Promise<ChatMessage[] | PublicKey[]> {
        return fetchMultipleAccounts(this.connection, DEFAULT_CHAT_PROGRAM_ID, 'chatMessage', { initialByte: '2', customOffset: [1], customOffsetAddress: [proposalAccount], programType:"chat", deserialize });
      }
+
+
+     /** Get Chat Messages addresses
+      *
+      * @param chatMessageAddres The public key of the ChatMessage account
+      * @returns Chat Message accounts
+      */
+     async getChatMessagesByAddress(chatMessageAddresses: PublicKey[]) : Promise<ChatMessage[]> {
+       return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, 'chatMessage')
+     }
+
 
     /** Get all Chat Messages
      *
