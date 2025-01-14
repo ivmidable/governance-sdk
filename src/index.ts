@@ -1,7 +1,7 @@
 import {PublicKey, Connection, TransactionInstruction, Keypair, SystemProgram, clusterApiUrl, AccountMeta} from "@solana/web3.js";
 import {Program, Wallet, AnchorProvider} from "@coral-xyz/anchor";
 import BN from "bn.js";
-import {GovernanceIdl} from "./idl/idl";
+import {ChatIdl, GovernanceIdl} from "./idl/idl";
 import idl from "./idl/gov.json";
 import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
@@ -13,6 +13,7 @@ export class SplGovernance {
     readonly programId: PublicKey;
     readonly connection: Connection;
     readonly program: Program<GovernanceIdl>;
+    readonly chat: Program<ChatIdl>;
     readonly pda: PdaClient;
     private readonly _provider: AnchorProvider;
 
@@ -24,13 +25,14 @@ export class SplGovernance {
         this.programId = programId ?? DEFAULT_PROGRAM_ID;
         this._provider = new AnchorProvider(this.connection, {} as Wallet, {commitment: "confirmed"});
         this.program = new Program<GovernanceIdl>(idl as GovernanceIdl, this.programId, this._provider);
+        this.chat = new Program<ChatIdl>(idl as ChatIdl, DEFAULT_CHAT_PROGRAM_ID, this._provider);
         this.pda = new PdaClient(this.programId);
     }
 
     // GET APIs
 
     /** Get realm account from its public key
-     * 
+     *
      * @param realmAccount The public key of the realm account
      * @returns Realm account
      */
@@ -39,7 +41,7 @@ export class SplGovernance {
     }
 
     /** Get realm account from the name
-     * 
+     *
      * @param name The name of the Realm
      * @returns Realm account
      */
@@ -49,7 +51,7 @@ export class SplGovernance {
     }
 
     /** Get all the realm accounts
-     * 
+     *
      * @returns all Realm accounts
      */
     async getAllRealms(): Promise<RealmV2[]> {
@@ -57,7 +59,7 @@ export class SplGovernance {
     }
 
     /** Get Realm accounts from the community mint
-     * 
+     *
      * @param communityMint Mint address of the token used as the community token
      * @returns Realms using the given token as the community mint
      */
@@ -66,7 +68,7 @@ export class SplGovernance {
     }
 
     /** Get realm account V1 from its public key
-     * 
+     *
      * @param realmAccount The public key of the realm account
      * @returns Realm account
      */
@@ -75,7 +77,7 @@ export class SplGovernance {
     }
 
     /** Get realm account V1 from the name
-     * 
+     *
      * @param name The name of the Realm
      * @returns Realm account
      */
@@ -85,7 +87,7 @@ export class SplGovernance {
     }
 
     /** Get all the V1 realm accounts
-     * 
+     *
      * @returns all Realm accounts
      */
     async getAllV1Realms(): Promise<RealmV1[]> {
@@ -93,7 +95,7 @@ export class SplGovernance {
     }
 
     /** Get V1 Realm accounts from the community mint
-     * 
+     *
      * @param communityMint Mint address of the token used as the community token
      * @returns Realms using the given token as the community mint
      */
@@ -102,7 +104,7 @@ export class SplGovernance {
     }
 
     /** Get Realm config account from its public key
-     * 
+     *
      * @param realmConfigAddress The public key of the Realm Config Account
      * @returns Realm Config Account
      */
@@ -111,7 +113,7 @@ export class SplGovernance {
     }
 
     /** Get Realm config account from the realm account's public key
-     * 
+     *
      * @param realmAccount The public key of the Realm Account
      * @returns Realm Config Account
      */
@@ -121,7 +123,7 @@ export class SplGovernance {
     }
 
     /** Get all Realm config accounts
-     * 
+     *
      * @returns Realm Config Accounts
      */
     async getAllRealmConfigs(): Promise<RealmConfig[]> {
@@ -129,7 +131,7 @@ export class SplGovernance {
     }
 
     /** Get Token Owner Record Account from its public key
-     * 
+     *
      * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
      * @returns Token Owner Record account
      */
@@ -138,7 +140,7 @@ export class SplGovernance {
     }
 
     /** Get Token Owner Record Account
-     * 
+     *
      * @param realmAccount The public key of the Realm Account
      * @param tokenOwner The public key of the owner
      * @param tokenMint The token address (either community mint or council mint)
@@ -155,8 +157,8 @@ export class SplGovernance {
         return this.getTokenOwnerRecordByPubkey(tokenOwnerRecordAddress)
     }
 
-    /** Get all the token owner records for the given realm 
-     * 
+    /** Get all the token owner records for the given realm
+     *
      * @param realmAccount The public key of the Realm Account
      * @returns all Token Owner Records for the given realm account
      */
@@ -164,8 +166,8 @@ export class SplGovernance {
         return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
     }
 
-    /** Get all the token owner record addresses for the given realm 
-     * 
+    /** Get all the token owner record addresses for the given realm
+     *
      * @param realmAccount The public key of the Realm Account
      * @returns all Token Owner Record Addresses for the given realm account
      */
@@ -173,8 +175,8 @@ export class SplGovernance {
         return fetchMultipleAndNotDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [1], [realmAccount])
     }
 
-    /** Get all the token owner records for the given owner 
-     * 
+    /** Get all the token owner records for the given owner
+     *
      * @param tokenOwner The public key of the user whose token owner records to fetch
      * @returns all Token Owner Records for the given owner
      */
@@ -182,8 +184,8 @@ export class SplGovernance {
         return fetchMultipleAndDeserialize(this.connection, this.programId, 'tokenOwnerRecordV2', 'J', [65], [tokenOwner])
     }
 
-    /** Get all the token owner records for the given mint 
-     * 
+    /** Get all the token owner records for the given mint
+     *
      * @param tokenMint Mint address of the token whose token owner records to fetch
      * @returns all Token Owner Records for the given mint
      */
@@ -192,7 +194,7 @@ export class SplGovernance {
     }
 
     /** Get all the token owner records
-     * 
+     *
      * @returns all Token Owner Records accounts
      */
     async getAllTokenOwnerRecords(): Promise<TokenOwnerRecord[]> {
@@ -200,7 +202,7 @@ export class SplGovernance {
     }
 
     /** Get all the token owner records with user as delegate in the given realm
-     * 
+     *
      * @param realmAccount The public key of the Realm Account
      * @param delegateAddress The public key of the delegate
      * @param tokenMint (optional) the mint address
@@ -215,17 +217,17 @@ export class SplGovernance {
         const addresses = tokenMint ? [realmAccount, tokenMint, delegateAddress] : [realmAccount, delegateAddress]
 
         return fetchMultipleAndDeserialize(
-            this.connection, 
-            this.programId, 
-            'tokenOwnerRecordV2', 
-            'J', 
-            offsets, 
+            this.connection,
+            this.programId,
+            'tokenOwnerRecordV2',
+            'J',
+            offsets,
             addresses
         )
     }
 
     /** Get Governance account from its public key
-     * 
+     *
      * @param governanceAccount The public key of the governance account
      * @returns Governance account
      */
@@ -234,7 +236,7 @@ export class SplGovernance {
     }
 
     /** Get all the governance accounts for the realm
-     * 
+     *
      * @param realmAccount The public key of the Realm Account
      * @returns all Governance accounts for the given Realm
      */
@@ -243,7 +245,7 @@ export class SplGovernance {
     }
 
     /** Get V1 Governance account from its public key
-     * 
+     *
      * @param governanceAccount The public key of the governance account
      * @returns Governance account
      */
@@ -252,7 +254,7 @@ export class SplGovernance {
     }
 
     /** Get all the V1 governance accounts for the realm
-     * 
+     *
      * @param realmAccount The public key of the Realm Account
      * @returns all Governance accounts for the given Realm
      */
@@ -261,7 +263,7 @@ export class SplGovernance {
     }
 
     /** Get Proposal account from its public key
-     * 
+     *
      * @param proposalAccount The public key of the proposal account
      * @returns Proposal account
      */
@@ -270,24 +272,24 @@ export class SplGovernance {
     }
 
     /** Get all the proposal accounts for the Governance
-     * 
+     *
      * @param governanceAccount The public key of the Governance Account
      * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
      * @returns all Proposal accounts for the given Governance
      */
     async getProposalsforGovernance(governanceAccount: PublicKey, onlyActive?: boolean): Promise<ProposalV2[]> {
         return fetchMultipleAndDeserialize(
-            this.connection, 
-            this.programId, 
-            'proposalV2', 
-            'F', 
-            onlyActive ? [1, 65] : [1], 
+            this.connection,
+            this.programId,
+            'proposalV2',
+            'F',
+            onlyActive ? [1, 65] : [1],
             onlyActive ? ['3', governanceAccount] : [governanceAccount]
         )
     }
 
     /** Get all the proposal accounts for a user in Realm
-     * 
+     *
      * @param tokenOwnerRecord The public key of the user's token owner record
      * @returns all Proposal accounts for the given user
      */
@@ -296,7 +298,7 @@ export class SplGovernance {
     }
 
     /** Get all Proposals
-     * 
+     *
      * @returns all V2 Proposals accounts
      */
     async getAllProposals(): Promise<ProposalV2[]> {
@@ -304,7 +306,7 @@ export class SplGovernance {
     }
 
     /** Get all V1 Proposals
-     * 
+     *
      * @returns all V1 Proposals accounts
      */
     async getAllV1Proposals(): Promise<ProposalV1[]> {
@@ -312,7 +314,7 @@ export class SplGovernance {
     }
 
     /** Get Proposal Deposit account from its public key
-     * 
+     *
      * @param proposalDepositAccount The public key of the proposal deposit account
      * @returns Proposal Deposit account
      */
@@ -321,7 +323,7 @@ export class SplGovernance {
     }
 
     /** Get all Proposal Deposit accounts
-     * 
+     *
      * @returns Proposal Deposit accounts
      */
     async getAllProposalDeposits(): Promise<ProposalDeposit[]> {
@@ -329,7 +331,7 @@ export class SplGovernance {
     }
 
     /** Get proposal deposit accounts for the given proposal
-     * 
+     *
      * @param proposalAccount The public key of the proposal account
      * @returns proposal deposit accounts for the given proposal
      */
@@ -338,7 +340,7 @@ export class SplGovernance {
     }
 
     /** Get Proposal Transaction account from its public key
-     * 
+     *
      * @param proposalTransactionAccount The public key of the proposal transaction account
      * @returns Proposal Transaction account
      */
@@ -347,7 +349,7 @@ export class SplGovernance {
     }
 
     /** Get all proposal instruction accounts (v1)
-     * 
+     *
      * @returns proposal instruction accounts (v1)
      */
     async getAllProposalInstructions(): Promise<ProposalInstruction[]> {
@@ -355,7 +357,7 @@ export class SplGovernance {
     }
 
     /** Get proposal transaction accounts for the given proposal
-     * 
+     *
      * @param proposalAccount The public key of the proposal account
      * @returns proposal transaction accounts for the given proposal
      */
@@ -364,7 +366,7 @@ export class SplGovernance {
     }
 
     /** Get all proposal transaction accounts
-     * 
+     *
      * @returns proposal transaction accounts
      */
     async getAllProposalTransactions(): Promise<ProposalTransaction[]> {
@@ -372,7 +374,7 @@ export class SplGovernance {
     }
 
     /** Get Signatory Record from its public key
-     * 
+     *
      * @param signatoryRecordAddress The public key of the Signatory Record account
      * @returns Signatory Record account
      */
@@ -381,7 +383,7 @@ export class SplGovernance {
     }
 
     /** Get Signatory Record account
-     * 
+     *
      * @param proposalAccount The public key of the Proposal account
      * @param signatory The signer's public key
      * @returns Signatory Record account
@@ -395,7 +397,7 @@ export class SplGovernance {
     }
 
     /** Get all signatory records for the proposal
-     * 
+     *
      * @param proposalAccount The public key of the Proposal account
      * @returns all signatory records for the given proposal
      */
@@ -404,7 +406,7 @@ export class SplGovernance {
     }
 
     /** Get all signatory records
-     * 
+     *
      * @returns all signatory records
      */
     async getAllSignatoryRecords(): Promise<SignatoryRecord[]> {
@@ -412,7 +414,7 @@ export class SplGovernance {
     }
 
     /** Get Vote Record from its public key
-     * 
+     *
      * @param voteRecordAddress The public key of the Vote Record account
      * @returns Vote Record account
      */
@@ -421,7 +423,7 @@ export class SplGovernance {
     }
 
      /** Get Vote Record account
-     * 
+     *
      * @param proposalAccount The public key of the Proposal account
      * @param tokenOwnerRecord The public key of the voter's token owner record
      * @returns Vote Record account
@@ -436,7 +438,7 @@ export class SplGovernance {
 
 
     /** Get all vote records for the proposal
-     * 
+     *
      * @param proposalAccount The public key of the Proposal account
      * @returns all vote records for the given proposal
      */
@@ -445,24 +447,24 @@ export class SplGovernance {
     }
 
     /** Get all vote records for the voter
-     * 
+     *
      * @param voter The public key of the voter
      * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
      * @returns all vote records for the given voter
      */
     async getVoteRecordsForUser(voter: PublicKey, unrelinquishedOnly?: boolean) : Promise<VoteRecord[]> {
         return fetchMultipleAndDeserialize(
-            this.connection, 
-            this.programId, 
+            this.connection,
+            this.programId,
             'voteRecordV2',
-            'D', 
-            unrelinquishedOnly ? [33,65] : [33], 
+            'D',
+            unrelinquishedOnly ? [33,65] : [33],
             unrelinquishedOnly ? [voter, '1'] : [voter]
         )
     }
 
     /** Get all vote records
-     * 
+     *
      * @returns all V2 vote records
      */
     async getAllVoteRecords(): Promise<VoteRecord[]> {
@@ -470,7 +472,7 @@ export class SplGovernance {
     }
 
     /** Get all V1 vote records
-     * 
+     *
      * @returns all V1 vote records
      */
     async getAllV1VoteRecords(): Promise<VoteRecordV1[]> {
@@ -478,16 +480,16 @@ export class SplGovernance {
     }
 
      /** Get Chat Message from its public key
-     * 
+     *
      * @param chatMessageAddress The public key of the Chat Message account
      * @returns Chat Message account
      */
      async getChatMessageByPubkey(chatMessageAddress: PublicKey): Promise<ChatMessage> {
         return fetchAndDeserialize(this.connection, chatMessageAddress, 'chatMessage', "chat")
     }
-    
+
     /** Get Chat Messages for a proposal
-     * 
+     *
      * @param proposalAccount The public key of the Proposal account
      * @returns Chat Message accounts
      */
@@ -496,7 +498,7 @@ export class SplGovernance {
     }
 
     /** Get all Chat Messages
-     * 
+     *
      * @returns Chat Message accounts
      */
     async getAllChatMessages(): Promise<ChatMessage[]> {
@@ -504,7 +506,7 @@ export class SplGovernance {
     }
 
     /** Get Voter Weight Record
-     * 
+     *
      * @returns Voter Weight Record account
      */
     async getVoterWeightRecord(voterWeightRecordAddress: PublicKey): Promise<VoterWeightRecord> {
@@ -512,7 +514,7 @@ export class SplGovernance {
     }
 
     /** Get Voter Weight Record
-     * 
+     *
      * @returns Voter Weight Record account
      */
     async getAllVoterWeightRecords(): Promise<VoterWeightRecord[]> {
@@ -520,7 +522,7 @@ export class SplGovernance {
     }
 
      /** Get Max Voter Weight Record
-     * 
+     *
      * @returns Voter Weight Record account
      */
      async getMaxVoterWeightRecord(maxVoterWeightRecordAddress: PublicKey): Promise<MaxVoterWeightRecord> {
@@ -533,16 +535,16 @@ export class SplGovernance {
      * @param name Name for the new realm (must be unique)
      * @param communityTokenMint Mint Account of the token to be used as community token
      * @param minCommunityWeightToCreateGovernance  Min number of community tokens required to create a governance
-     * @param payer The payer of the transaction 
+     * @param payer The payer of the transaction
      * @param communityMintMaxVoterWeightSource (Optional) The default value is `{type: "supplyFraction", amount: new BN(Math.pow(10,10))}`. Max vote weight type can either be `supplyFraction` or `absolute`. For supply fraction, the amount is in percentage with `10^10` precision, e.g. `100% becomes 10^10`. For absolute, the amount is in actual tokens.
      * @param councilTokenMint (Optional) Mint Account of the token to be used as council token. Council won't be created if this isn't provided
-     * @param communityTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active. 
-     * @param councilTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active. 
+     * @param communityTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active.
+     * @param councilTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active.
      *
      *  @return Instruction to add to a transaction
     */
     async createRealmInstruction (
-        name: string, 
+        name: string,
         communityTokenMint: PublicKey,
         minCommunityWeightToCreateGovernance: BN | number,
         payer: PublicKey,
@@ -556,7 +558,7 @@ export class SplGovernance {
         maxCouncilVoterWeightAddinProgramId?: PublicKey,
     ) {
         return await govInstructions._createRealmContext(
-            name, communityTokenMint, minCommunityWeightToCreateGovernance, communityMintMaxVoterWeightSource, 
+            name, communityTokenMint, minCommunityWeightToCreateGovernance, communityMintMaxVoterWeightSource,
             communityTokenType, councilTokenType, this.program, payer, this.pda, councilTokenMint, communityVoterWeightAddinProgramId,
             maxCommunityVoterWeightAddinProgramId, councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId
         )
@@ -570,7 +572,7 @@ export class SplGovernance {
      * @param governingTokenSourceAccount  It can be either TokenAccount (if tokens are to be transferred) or MintAccount (if tokens are to be minted)
      * @param governingTokenOwner The owner of the governing token account
      * @param governingTokenSourceAuthority It should be owner for TokenAccount and mint_authority for MintAccount
-     * @param payer The payer of the transaction 
+     * @param payer The payer of the transaction
      * @param amount The amount to deposit into the realm
      *
      *  @return Instruction to add to a transaction
@@ -585,9 +587,9 @@ export class SplGovernance {
         amount: BN | number
     ) {
         return await govInstructions._depositGoverningTokensContext(
-            realmAccount, governingTokenMintAccount, governingTokenSourceAccount, governingTokenOwner, 
+            realmAccount, governingTokenMintAccount, governingTokenSourceAccount, governingTokenOwner,
             governingTokenSourceAuthority, amount, this.program, payer, this.pda
-        );   
+        );
     }
 
     /**
@@ -616,9 +618,9 @@ export class SplGovernance {
      * Construct a SetGovernanceDelegate Instruction
      *
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
-     * @param currentDelegateOrOwner Current Governance Delegate or Governing Token owner 
+     * @param currentDelegateOrOwner Current Governance Delegate or Governing Token owner
      * @param newGovernanceDelegate New Governance Delegate
-     * 
+     *
      *  @return Instruction to add to a transaction
     */
      async setGovernanceDelegateInstruction(
@@ -640,7 +642,7 @@ export class SplGovernance {
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner). Required only if the signer is not the realm authority
      * @param payer Payer of the transaction
      * @param governanceAccountSeed (Optional) Random public key to seed the governance account
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async createGovernanceInstruction(
@@ -663,7 +665,7 @@ export class SplGovernance {
      *
      * @param name Name of the proposal
      * @param descriptionLink link to the gist/brief description of the proposal
-     * @param voteType Proposal Vote Type. Either Single Choice or Multi Choice 
+     * @param voteType Proposal Vote Type. Either Single Choice or Multi Choice
      * @param options The array of options
      * @param useDenyOption Indicates whether the proposal has the deny option
      * @param realmAccount The Realm Account
@@ -673,7 +675,7 @@ export class SplGovernance {
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param payer Payer of the transaction
      * @param proposalSeed (Optional) Random public key to seed the proposal account
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async createProposalInstruction(
@@ -693,7 +695,7 @@ export class SplGovernance {
     ) {
         return await govInstructions._createProposalContext(
             name, descriptionLink, voteType, options, useDenyOption, realmAccount, governanceAccount,
-            tokenOwnerRecord, governingTokenMint, governanceAuthority, payer, this.program, this.pda, 
+            tokenOwnerRecord, governingTokenMint, governanceAuthority, payer, this.program, this.pda,
             proposalSeed, voterWeightRecord
         )
     }
@@ -706,7 +708,7 @@ export class SplGovernance {
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param payer Payer of the transaction
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async addSignatoryInstruction(
@@ -734,7 +736,7 @@ export class SplGovernance {
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param payer Payer of the transaction
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async insertTransactionInstruction(
@@ -762,7 +764,7 @@ export class SplGovernance {
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param proposalTransactionAccount Proposal Transaction Account, pda('governance', proposal, optionIndex, index)
      * @param beneficiaryAccount Beneficiary Account which would receive lamports from the disposed ProposalTransaction account
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async removeTransactionInstruction(
@@ -786,7 +788,7 @@ export class SplGovernance {
      * @param proposalAccount Proposal account
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
      * @param governanceAuthority Either the current delegate or governing token owner
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async cancelProposalInstruction(
@@ -811,7 +813,7 @@ export class SplGovernance {
      * @param signer Either Signatory Account or the proposal owner if signatory isn't appointed
      * @param signatoryRecordAccount (Optional) pda(proposal, signatory), required when non owner signs off the Proposal
      * @param tokenOwnerRecord (Optional) pda(realm, governing_token_mint, governing_token_owner), required when the owner signs off the proposal
-     * 
+     *
      * @return Instruction to add to a transaction
     */
     async signOffProposalInstruction(
@@ -840,8 +842,8 @@ export class SplGovernance {
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param governingTokenMint The Mint Account of the governing token (either community token or council token). For Veto vote, pass the opposite governing token mint
      * @param payer Payer of the transaction
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async castVoteInstruction(
@@ -872,8 +874,8 @@ export class SplGovernance {
      * @param proposalAccount Proposal account
      * @param tokenOwnerRecord Proposal Owner's Token Owner Record account, pda(realm, governing_token_mint, proposal_owner)
      * @param governingTokenMint The Mint Account of the governing token (either community token or council token)
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async finalizeVoteInstruction(
@@ -900,8 +902,8 @@ export class SplGovernance {
      * @param governingTokenMint The Mint Account of the governing token used for voting (either community token or council token)
      * @param governanceAuthority (Optional) Either the current delegate or governing token owner. Only needed if the proposal is still being voted on
      * @param beneficiaryAccount (Optional) Beneficiary Account which would receive lamports from the disposed VoteRecord account. Only needed if the proposal is still being voted on
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async relinquishVoteInstruction(
@@ -926,10 +928,10 @@ export class SplGovernance {
      * @param proposalAccount Proposal account
      * @param proposalTransactionAccount Proposal Transaction Account. pda('governance', proposal, option_index, index)
      * @param transactionAccounts Accounts that are part of the transaction, in order
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
-    */   
+    */
     async executeTransactionInstruction(
         governanceAccount: PublicKey,
         proposalAccount: PublicKey,
@@ -947,10 +949,10 @@ export class SplGovernance {
      *
      * @param governanceAccount The governance account. pda(realm, governance seed)
      * @param payer Payer of the transaction
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
-    */   
+    */
     async createNativeTreasuryInstruction(
         governanceAccount: PublicKey,
         payer: PublicKey
@@ -965,8 +967,8 @@ export class SplGovernance {
      *
      * @param config Governance Config
      * @param governanceAccount The governance account. pda(realm, governance seed)
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async setGovernanceConfigInstruction(
@@ -985,8 +987,8 @@ export class SplGovernance {
      * @param currentRealmAuthority The current Realm Authority
      * @param action "setChecked" - Sets realm authority and checks that the new authority is one of the realm's governances. "setUnchecked" - Sets new authority without any check. "remove" - Sets the realm authority to None.
      * @param newRealmAuthority (Optional) The new realm authority. Required when the action is not "remove"
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async setRealmAuthorityInstruction(
@@ -1008,8 +1010,8 @@ export class SplGovernance {
      * @param realmAuthority The current Realm Authority
      * @param payer Payer of the transaction
      * @param councilTokenMint (Optional) Mint Account of the token used as the council token. Required if the council is removed
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async setRealmConfigInstruciton(
@@ -1024,8 +1026,8 @@ export class SplGovernance {
         maxCouncilVoterWeightAddinProgramId?: PublicKey,
     ) {
         return await govInstructions._setRealmConfigContext(
-            config, realmAccount, realmAuthority, payer, this.program, this.pda, councilTokenMint, 
-            communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId, 
+            config, realmAccount, realmAuthority, payer, this.program, this.pda, councilTokenMint,
+            communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId,
             councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId
         )
     }
@@ -1037,8 +1039,8 @@ export class SplGovernance {
      * @param governingTokenOwner The owner of the governing token account
      * @param governingTokenMintAccount The Mint Account of the governing token
      * @param payer Payer of the transaction
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async createTokenOwnerRecordInstruction(
@@ -1061,8 +1063,8 @@ export class SplGovernance {
      * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
      * @param governingTokenMintAccount The Mint Account of the governing token
      * @param revokeAuthority Either the mint authority of the governing token or governing token owner
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async revokeGoverningTokensInstruction(
@@ -1083,8 +1085,8 @@ export class SplGovernance {
      *
      * @param proposalAccount The proposal account
      * @param depositPayer Proposal deposit payer (beneficiary) account
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async refundProposalDepositInstruction(
@@ -1102,8 +1104,8 @@ export class SplGovernance {
      * @param proposalAccount The proposal account
      * @param tokenOwnerRecord Token Owner Record Account of the proposal owner, pda(realm, governing_token_mint, proposal_owner)
      * @param completeProposalAuthority Either the current delegate or governing token owner
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async completeProposalInstruction(
@@ -1130,8 +1132,8 @@ export class SplGovernance {
      * @param governanceAuthority Either the current delegate or governing token owner
      * @param payer Payer of the transaction
      * @param replyTo (optional) The public key of the parent message
-     * 
-     * 
+     *
+     *
      * @return Instruction to add to a transaction
     */
     async postMessageInstruction(
@@ -1149,8 +1151,8 @@ export class SplGovernance {
         voterWeightRecord?: PublicKey
     ) {
         return await govInstructions._postMessageContext(
-            isReply, messageBody, messageType, chatMessageAccount, this.programId, realmAccount, 
-            governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, this._provider, 
+            isReply, messageBody, messageType, chatMessageAccount, this.programId, realmAccount,
+            governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, this._provider,
             this.pda, payer, replyTo, voterWeightRecord
         )
     }

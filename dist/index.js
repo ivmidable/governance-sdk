@@ -65,13 +65,13 @@ var __async = (__this, __arguments, generator) => {
 };
 
 // src/index.ts
-var src_exports = {};
-__export(src_exports, {
+var index_exports = {};
+__export(index_exports, {
   DEFAULT_CHAT_PROGRAM_ID: () => DEFAULT_CHAT_PROGRAM_ID,
   DEFAULT_PROGRAM_ID: () => DEFAULT_PROGRAM_ID,
   SplGovernance: () => SplGovernance
 });
-module.exports = __toCommonJS(src_exports);
+module.exports = __toCommonJS(index_exports);
 var import_web37 = require("@solana/web3.js");
 var import_anchor2 = require("@coral-xyz/anchor");
 var import_bn7 = __toESM(require("bn.js"));
@@ -5616,11 +5616,12 @@ var SplGovernance = class {
     this.programId = programId != null ? programId : DEFAULT_PROGRAM_ID;
     this._provider = new import_anchor2.AnchorProvider(this.connection, {}, { commitment: "confirmed" });
     this.program = new import_anchor2.Program(gov_default, this.programId, this._provider);
+    this.chat = new import_anchor2.Program(gov_default, DEFAULT_CHAT_PROGRAM_ID, this._provider);
     this.pda = new PdaClient(this.programId);
   }
   // GET APIs
   /** Get realm account from its public key
-   * 
+   *
    * @param realmAccount The public key of the realm account
    * @returns Realm account
    */
@@ -5630,7 +5631,7 @@ var SplGovernance = class {
     });
   }
   /** Get realm account from the name
-   * 
+   *
    * @param name The name of the Realm
    * @returns Realm account
    */
@@ -5641,7 +5642,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the realm accounts
-   * 
+   *
    * @returns all Realm accounts
    */
   getAllRealms() {
@@ -5650,7 +5651,7 @@ var SplGovernance = class {
     });
   }
   /** Get Realm accounts from the community mint
-   * 
+   *
    * @param communityMint Mint address of the token used as the community token
    * @returns Realms using the given token as the community mint
    */
@@ -5660,7 +5661,7 @@ var SplGovernance = class {
     });
   }
   /** Get realm account V1 from its public key
-   * 
+   *
    * @param realmAccount The public key of the realm account
    * @returns Realm account
    */
@@ -5670,7 +5671,7 @@ var SplGovernance = class {
     });
   }
   /** Get realm account V1 from the name
-   * 
+   *
    * @param name The name of the Realm
    * @returns Realm account
    */
@@ -5681,7 +5682,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the V1 realm accounts
-   * 
+   *
    * @returns all Realm accounts
    */
   getAllV1Realms() {
@@ -5690,7 +5691,7 @@ var SplGovernance = class {
     });
   }
   /** Get V1 Realm accounts from the community mint
-   * 
+   *
    * @param communityMint Mint address of the token used as the community token
    * @returns Realms using the given token as the community mint
    */
@@ -5700,7 +5701,7 @@ var SplGovernance = class {
     });
   }
   /** Get Realm config account from its public key
-   * 
+   *
    * @param realmConfigAddress The public key of the Realm Config Account
    * @returns Realm Config Account
    */
@@ -5710,7 +5711,7 @@ var SplGovernance = class {
     });
   }
   /** Get Realm config account from the realm account's public key
-   * 
+   *
    * @param realmAccount The public key of the Realm Account
    * @returns Realm Config Account
    */
@@ -5721,7 +5722,7 @@ var SplGovernance = class {
     });
   }
   /** Get all Realm config accounts
-   * 
+   *
    * @returns Realm Config Accounts
    */
   getAllRealmConfigs() {
@@ -5730,7 +5731,7 @@ var SplGovernance = class {
     });
   }
   /** Get Token Owner Record Account from its public key
-   * 
+   *
    * @param tokenOwnerRecordAddress The public key of the Token Owner Record account
    * @returns Token Owner Record account
    */
@@ -5740,7 +5741,7 @@ var SplGovernance = class {
     });
   }
   /** Get Token Owner Record Account
-   * 
+   *
    * @param realmAccount The public key of the Realm Account
    * @param tokenOwner The public key of the owner
    * @param tokenMint The token address (either community mint or council mint)
@@ -5756,8 +5757,8 @@ var SplGovernance = class {
       return this.getTokenOwnerRecordByPubkey(tokenOwnerRecordAddress);
     });
   }
-  /** Get all the token owner records for the given realm 
-   * 
+  /** Get all the token owner records for the given realm
+   *
    * @param realmAccount The public key of the Realm Account
    * @returns all Token Owner Records for the given realm account
    */
@@ -5766,8 +5767,8 @@ var SplGovernance = class {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
     });
   }
-  /** Get all the token owner record addresses for the given realm 
-   * 
+  /** Get all the token owner record addresses for the given realm
+   *
    * @param realmAccount The public key of the Realm Account
    * @returns all Token Owner Record Addresses for the given realm account
    */
@@ -5776,8 +5777,8 @@ var SplGovernance = class {
       return fetchMultipleAndNotDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [1], [realmAccount]);
     });
   }
-  /** Get all the token owner records for the given owner 
-   * 
+  /** Get all the token owner records for the given owner
+   *
    * @param tokenOwner The public key of the user whose token owner records to fetch
    * @returns all Token Owner Records for the given owner
    */
@@ -5786,8 +5787,8 @@ var SplGovernance = class {
       return fetchMultipleAndDeserialize(this.connection, this.programId, "tokenOwnerRecordV2", "J", [65], [tokenOwner]);
     });
   }
-  /** Get all the token owner records for the given mint 
-   * 
+  /** Get all the token owner records for the given mint
+   *
    * @param tokenMint Mint address of the token whose token owner records to fetch
    * @returns all Token Owner Records for the given mint
    */
@@ -5797,7 +5798,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the token owner records
-   * 
+   *
    * @returns all Token Owner Records accounts
    */
   getAllTokenOwnerRecords() {
@@ -5806,7 +5807,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the token owner records with user as delegate in the given realm
-   * 
+   *
    * @param realmAccount The public key of the Realm Account
    * @param delegateAddress The public key of the delegate
    * @param tokenMint (optional) the mint address
@@ -5827,7 +5828,7 @@ var SplGovernance = class {
     });
   }
   /** Get Governance account from its public key
-   * 
+   *
    * @param governanceAccount The public key of the governance account
    * @returns Governance account
    */
@@ -5837,7 +5838,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the governance accounts for the realm
-   * 
+   *
    * @param realmAccount The public key of the Realm Account
    * @returns all Governance accounts for the given Realm
    */
@@ -5847,7 +5848,7 @@ var SplGovernance = class {
     });
   }
   /** Get V1 Governance account from its public key
-   * 
+   *
    * @param governanceAccount The public key of the governance account
    * @returns Governance account
    */
@@ -5857,7 +5858,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the V1 governance accounts for the realm
-   * 
+   *
    * @param realmAccount The public key of the Realm Account
    * @returns all Governance accounts for the given Realm
    */
@@ -5867,7 +5868,7 @@ var SplGovernance = class {
     });
   }
   /** Get Proposal account from its public key
-   * 
+   *
    * @param proposalAccount The public key of the proposal account
    * @returns Proposal account
    */
@@ -5877,7 +5878,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the proposal accounts for the Governance
-   * 
+   *
    * @param governanceAccount The public key of the Governance Account
    * @param onlyActive (optional) True if only wants to return the proposal accounts with `voting` state
    * @returns all Proposal accounts for the given Governance
@@ -5895,7 +5896,7 @@ var SplGovernance = class {
     });
   }
   /** Get all the proposal accounts for a user in Realm
-   * 
+   *
    * @param tokenOwnerRecord The public key of the user's token owner record
    * @returns all Proposal accounts for the given user
    */
@@ -5905,7 +5906,7 @@ var SplGovernance = class {
     });
   }
   /** Get all Proposals
-   * 
+   *
    * @returns all V2 Proposals accounts
    */
   getAllProposals() {
@@ -5914,7 +5915,7 @@ var SplGovernance = class {
     });
   }
   /** Get all V1 Proposals
-   * 
+   *
    * @returns all V1 Proposals accounts
    */
   getAllV1Proposals() {
@@ -5923,7 +5924,7 @@ var SplGovernance = class {
     });
   }
   /** Get Proposal Deposit account from its public key
-   * 
+   *
    * @param proposalDepositAccount The public key of the proposal deposit account
    * @returns Proposal Deposit account
    */
@@ -5933,7 +5934,7 @@ var SplGovernance = class {
     });
   }
   /** Get all Proposal Deposit accounts
-   * 
+   *
    * @returns Proposal Deposit accounts
    */
   getAllProposalDeposits() {
@@ -5942,7 +5943,7 @@ var SplGovernance = class {
     });
   }
   /** Get proposal deposit accounts for the given proposal
-   * 
+   *
    * @param proposalAccount The public key of the proposal account
    * @returns proposal deposit accounts for the given proposal
    */
@@ -5952,7 +5953,7 @@ var SplGovernance = class {
     });
   }
   /** Get Proposal Transaction account from its public key
-   * 
+   *
    * @param proposalTransactionAccount The public key of the proposal transaction account
    * @returns Proposal Transaction account
    */
@@ -5962,7 +5963,7 @@ var SplGovernance = class {
     });
   }
   /** Get all proposal instruction accounts (v1)
-   * 
+   *
    * @returns proposal instruction accounts (v1)
    */
   getAllProposalInstructions() {
@@ -5971,7 +5972,7 @@ var SplGovernance = class {
     });
   }
   /** Get proposal transaction accounts for the given proposal
-   * 
+   *
    * @param proposalAccount The public key of the proposal account
    * @returns proposal transaction accounts for the given proposal
    */
@@ -5981,7 +5982,7 @@ var SplGovernance = class {
     });
   }
   /** Get all proposal transaction accounts
-   * 
+   *
    * @returns proposal transaction accounts
    */
   getAllProposalTransactions() {
@@ -5990,7 +5991,7 @@ var SplGovernance = class {
     });
   }
   /** Get Signatory Record from its public key
-   * 
+   *
    * @param signatoryRecordAddress The public key of the Signatory Record account
    * @returns Signatory Record account
    */
@@ -6000,7 +6001,7 @@ var SplGovernance = class {
     });
   }
   /** Get Signatory Record account
-   * 
+   *
    * @param proposalAccount The public key of the Proposal account
    * @param signatory The signer's public key
    * @returns Signatory Record account
@@ -6012,7 +6013,7 @@ var SplGovernance = class {
     });
   }
   /** Get all signatory records for the proposal
-   * 
+   *
    * @param proposalAccount The public key of the Proposal account
    * @returns all signatory records for the given proposal
    */
@@ -6022,7 +6023,7 @@ var SplGovernance = class {
     });
   }
   /** Get all signatory records
-   * 
+   *
    * @returns all signatory records
    */
   getAllSignatoryRecords() {
@@ -6031,7 +6032,7 @@ var SplGovernance = class {
     });
   }
   /** Get Vote Record from its public key
-   * 
+   *
    * @param voteRecordAddress The public key of the Vote Record account
    * @returns Vote Record account
    */
@@ -6041,7 +6042,7 @@ var SplGovernance = class {
     });
   }
   /** Get Vote Record account
-  * 
+  *
   * @param proposalAccount The public key of the Proposal account
   * @param tokenOwnerRecord The public key of the voter's token owner record
   * @returns Vote Record account
@@ -6053,7 +6054,7 @@ var SplGovernance = class {
     });
   }
   /** Get all vote records for the proposal
-   * 
+   *
    * @param proposalAccount The public key of the Proposal account
    * @returns all vote records for the given proposal
    */
@@ -6063,7 +6064,7 @@ var SplGovernance = class {
     });
   }
   /** Get all vote records for the voter
-   * 
+   *
    * @param voter The public key of the voter
    * @param unrelinquishedOnly (optional) If sets to true, only returns unrelinquished vote records
    * @returns all vote records for the given voter
@@ -6081,7 +6082,7 @@ var SplGovernance = class {
     });
   }
   /** Get all vote records
-   * 
+   *
    * @returns all V2 vote records
    */
   getAllVoteRecords() {
@@ -6090,7 +6091,7 @@ var SplGovernance = class {
     });
   }
   /** Get all V1 vote records
-   * 
+   *
    * @returns all V1 vote records
    */
   getAllV1VoteRecords() {
@@ -6099,7 +6100,7 @@ var SplGovernance = class {
     });
   }
   /** Get Chat Message from its public key
-  * 
+  *
   * @param chatMessageAddress The public key of the Chat Message account
   * @returns Chat Message account
   */
@@ -6109,7 +6110,7 @@ var SplGovernance = class {
     });
   }
   /** Get Chat Messages for a proposal
-   * 
+   *
    * @param proposalAccount The public key of the Proposal account
    * @returns Chat Message accounts
    */
@@ -6119,7 +6120,7 @@ var SplGovernance = class {
     });
   }
   /** Get all Chat Messages
-   * 
+   *
    * @returns Chat Message accounts
    */
   getAllChatMessages() {
@@ -6128,7 +6129,7 @@ var SplGovernance = class {
     });
   }
   /** Get Voter Weight Record
-   * 
+   *
    * @returns Voter Weight Record account
    */
   getVoterWeightRecord(voterWeightRecordAddress) {
@@ -6137,7 +6138,7 @@ var SplGovernance = class {
     });
   }
   /** Get Voter Weight Record
-   * 
+   *
    * @returns Voter Weight Record account
    */
   getAllVoterWeightRecords() {
@@ -6146,7 +6147,7 @@ var SplGovernance = class {
     });
   }
   /** Get Max Voter Weight Record
-  * 
+  *
   * @returns Voter Weight Record account
   */
   getMaxVoterWeightRecord(maxVoterWeightRecordAddress) {
@@ -6160,11 +6161,11 @@ var SplGovernance = class {
    * @param name Name for the new realm (must be unique)
    * @param communityTokenMint Mint Account of the token to be used as community token
    * @param minCommunityWeightToCreateGovernance  Min number of community tokens required to create a governance
-   * @param payer The payer of the transaction 
+   * @param payer The payer of the transaction
    * @param communityMintMaxVoterWeightSource (Optional) The default value is `{type: "supplyFraction", amount: new BN(Math.pow(10,10))}`. Max vote weight type can either be `supplyFraction` or `absolute`. For supply fraction, the amount is in percentage with `10^10` precision, e.g. `100% becomes 10^10`. For absolute, the amount is in actual tokens.
    * @param councilTokenMint (Optional) Mint Account of the token to be used as council token. Council won't be created if this isn't provided
-   * @param communityTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active. 
-   * @param councilTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active. 
+   * @param communityTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active.
+   * @param councilTokenType (Optional) The default value is `liquid`. Defines who retains the authority over deposited tokens and which token instructions are allowed. Liquid = token owner has the authority, deposit and withdrawal is allowed. Membership = Realm has the authority, deposit is allowed, withdrawal is not allowed. Dormant = Placeholder, signifies that the voting population is not yet active.
    *
    *  @return Instruction to add to a transaction
   */
@@ -6196,7 +6197,7 @@ var SplGovernance = class {
    * @param governingTokenSourceAccount  It can be either TokenAccount (if tokens are to be transferred) or MintAccount (if tokens are to be minted)
    * @param governingTokenOwner The owner of the governing token account
    * @param governingTokenSourceAuthority It should be owner for TokenAccount and mint_authority for MintAccount
-   * @param payer The payer of the transaction 
+   * @param payer The payer of the transaction
    * @param amount The amount to deposit into the realm
    *
    *  @return Instruction to add to a transaction
@@ -6242,9 +6243,9 @@ var SplGovernance = class {
    * Construct a SetGovernanceDelegate Instruction
    *
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
-   * @param currentDelegateOrOwner Current Governance Delegate or Governing Token owner 
+   * @param currentDelegateOrOwner Current Governance Delegate or Governing Token owner
    * @param newGovernanceDelegate New Governance Delegate
-   * 
+   *
    *  @return Instruction to add to a transaction
   */
   setGovernanceDelegateInstruction(tokenOwnerRecord, currentDelegateOrOwner, newGovernanceDelegate) {
@@ -6266,7 +6267,7 @@ var SplGovernance = class {
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner). Required only if the signer is not the realm authority
    * @param payer Payer of the transaction
    * @param governanceAccountSeed (Optional) Random public key to seed the governance account
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   createGovernanceInstruction(_0, _1, _2) {
@@ -6289,7 +6290,7 @@ var SplGovernance = class {
    *
    * @param name Name of the proposal
    * @param descriptionLink link to the gist/brief description of the proposal
-   * @param voteType Proposal Vote Type. Either Single Choice or Multi Choice 
+   * @param voteType Proposal Vote Type. Either Single Choice or Multi Choice
    * @param options The array of options
    * @param useDenyOption Indicates whether the proposal has the deny option
    * @param realmAccount The Realm Account
@@ -6299,7 +6300,7 @@ var SplGovernance = class {
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param payer Payer of the transaction
    * @param proposalSeed (Optional) Random public key to seed the proposal account
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   createProposalInstruction(name, descriptionLink, voteType, options, useDenyOption, realmAccount, governanceAccount, tokenOwnerRecord, governingTokenMint, governanceAuthority, payer, proposalSeed, voterWeightRecord) {
@@ -6331,7 +6332,7 @@ var SplGovernance = class {
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param payer Payer of the transaction
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   addSignatoryInstruction(signatory, proposalAccount, tokenOwnerRecord, governanceAuthority, payer) {
@@ -6359,7 +6360,7 @@ var SplGovernance = class {
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param payer Payer of the transaction
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   insertTransactionInstruction(instructions, optionIndex, index, holdUpTime, governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, payer) {
@@ -6387,7 +6388,7 @@ var SplGovernance = class {
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param proposalTransactionAccount Proposal Transaction Account, pda('governance', proposal, optionIndex, index)
    * @param beneficiaryAccount Beneficiary Account which would receive lamports from the disposed ProposalTransaction account
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   removeTransactionInstruction(proposalAccount, tokenOwnerRecord, governanceAuthority, proposalTransactionAccount, beneficiaryAccount) {
@@ -6410,7 +6411,7 @@ var SplGovernance = class {
    * @param proposalAccount Proposal account
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
    * @param governanceAuthority Either the current delegate or governing token owner
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   cancelProposalInstruction(realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority) {
@@ -6434,7 +6435,7 @@ var SplGovernance = class {
    * @param signer Either Signatory Account or the proposal owner if signatory isn't appointed
    * @param signatoryRecordAccount (Optional) pda(proposal, signatory), required when non owner signs off the Proposal
    * @param tokenOwnerRecord (Optional) pda(realm, governing_token_mint, governing_token_owner), required when the owner signs off the proposal
-   * 
+   *
    * @return Instruction to add to a transaction
   */
   signOffProposalInstruction(realmAccount, governanceAccount, proposalAccount, signer, signatoryRecordAccount, tokenOwnerRecord) {
@@ -6462,8 +6463,8 @@ var SplGovernance = class {
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param governingTokenMint The Mint Account of the governing token (either community token or council token). For Veto vote, pass the opposite governing token mint
    * @param payer Payer of the transaction
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   castVoteInstruction(vote, realmAccount, governanceAccount, proposalAccount, proposalOwnerTokenOwnerRecord, voterTokenOwnerRecord, governanceAuthority, governingTokenMint, payer, voterWeightRecord, maxVoterWeightRecord) {
@@ -6493,8 +6494,8 @@ var SplGovernance = class {
    * @param proposalAccount Proposal account
    * @param tokenOwnerRecord Proposal Owner's Token Owner Record account, pda(realm, governing_token_mint, proposal_owner)
    * @param governingTokenMint The Mint Account of the governing token (either community token or council token)
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   finalizeVoteInstruction(realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governingTokenMint, maxVoterWeightRecord) {
@@ -6521,8 +6522,8 @@ var SplGovernance = class {
    * @param governingTokenMint The Mint Account of the governing token used for voting (either community token or council token)
    * @param governanceAuthority (Optional) Either the current delegate or governing token owner. Only needed if the proposal is still being voted on
    * @param beneficiaryAccount (Optional) Beneficiary Account which would receive lamports from the disposed VoteRecord account. Only needed if the proposal is still being voted on
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   relinquishVoteInstruction(realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governingTokenMint, governanceAuthority, beneficiaryAccount) {
@@ -6547,8 +6548,8 @@ var SplGovernance = class {
    * @param proposalAccount Proposal account
    * @param proposalTransactionAccount Proposal Transaction Account. pda('governance', proposal, option_index, index)
    * @param transactionAccounts Accounts that are part of the transaction, in order
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   executeTransactionInstruction(governanceAccount, proposalAccount, proposalTransactionAccount, transactionAccounts) {
@@ -6567,8 +6568,8 @@ var SplGovernance = class {
    *
    * @param governanceAccount The governance account. pda(realm, governance seed)
    * @param payer Payer of the transaction
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   createNativeTreasuryInstruction(governanceAccount, payer) {
@@ -6586,8 +6587,8 @@ var SplGovernance = class {
    *
    * @param config Governance Config
    * @param governanceAccount The governance account. pda(realm, governance seed)
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   setGovernanceConfigInstruction(config, governanceAccount) {
@@ -6606,8 +6607,8 @@ var SplGovernance = class {
    * @param currentRealmAuthority The current Realm Authority
    * @param action "setChecked" - Sets realm authority and checks that the new authority is one of the realm's governances. "setUnchecked" - Sets new authority without any check. "remove" - Sets the realm authority to None.
    * @param newRealmAuthority (Optional) The new realm authority. Required when the action is not "remove"
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   setRealmAuthorityInstruction(realmAccount, currentRealmAuthority, action, newRealmAuthority) {
@@ -6629,8 +6630,8 @@ var SplGovernance = class {
    * @param realmAuthority The current Realm Authority
    * @param payer Payer of the transaction
    * @param councilTokenMint (Optional) Mint Account of the token used as the council token. Required if the council is removed
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   setRealmConfigInstruciton(config, realmAccount, realmAuthority, payer, councilTokenMint, communityVoterWeightAddinProgramId, maxCommunityVoterWeightAddinProgramId, councilVoterWeightAddinProgramId, maxCouncilVoterWeightAddinProgramId) {
@@ -6657,8 +6658,8 @@ var SplGovernance = class {
    * @param governingTokenOwner The owner of the governing token account
    * @param governingTokenMintAccount The Mint Account of the governing token
    * @param payer Payer of the transaction
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   createTokenOwnerRecordInstruction(realmAccount, governingTokenOwner, governingTokenMint, payer) {
@@ -6681,8 +6682,8 @@ var SplGovernance = class {
    * @param tokenOwnerRecord Token Owner Record Account, pda(realm, governing_token_mint, governing_token_owner)
    * @param governingTokenMintAccount The Mint Account of the governing token
    * @param revokeAuthority Either the mint authority of the governing token or governing token owner
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   revokeGoverningTokensInstruction(amount, realmAccount, tokenOwnerRecord, governingTokenMint, revokeAuthority) {
@@ -6703,8 +6704,8 @@ var SplGovernance = class {
    *
    * @param proposalAccount The proposal account
    * @param depositPayer Proposal deposit payer (beneficiary) account
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   refundProposalDepositInstruction(proposalAccount, depositPayer) {
@@ -6723,8 +6724,8 @@ var SplGovernance = class {
    * @param proposalAccount The proposal account
    * @param tokenOwnerRecord Token Owner Record Account of the proposal owner, pda(realm, governing_token_mint, proposal_owner)
    * @param completeProposalAuthority Either the current delegate or governing token owner
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   completeProposalInstruction(proposalAccount, tokenOwnerRecord, completeProposalAuthority) {
@@ -6751,8 +6752,8 @@ var SplGovernance = class {
    * @param governanceAuthority Either the current delegate or governing token owner
    * @param payer Payer of the transaction
    * @param replyTo (optional) The public key of the parent message
-   * 
-   * 
+   *
+   *
    * @return Instruction to add to a transaction
   */
   postMessageInstruction(messageBody, messageType, isReply, chatMessageAccount, realmAccount, governanceAccount, proposalAccount, tokenOwnerRecord, governanceAuthority, payer, replyTo, voterWeightRecord) {

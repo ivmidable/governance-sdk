@@ -4891,6 +4891,7 @@ declare class SplGovernance {
     readonly programId: PublicKey;
     readonly connection: Connection;
     readonly program: Program<GovernanceIdl>;
+    readonly chat: Program<ChatIdl>;
     readonly pda: PdaClient;
     private readonly _provider;
     constructor(connection: Connection, programId?: PublicKey);
