@@ -21,9 +21,9 @@ export function deserialize(name: string, data: Buffer, pubkey: PublicKey, progr
 }
 
 export async function fetchAndDeserialize(
-    connection: Connection, 
-    pubkey: PublicKey, 
-    name: string, 
+    connection: Connection,
+    pubkey: PublicKey,
+    name: string,
     programType?: "chat" | "addin"
 ) {
     const account = await connection.getAccountInfo(pubkey);
@@ -35,60 +35,24 @@ export async function fetchAndDeserialize(
     }
 }
 
-export async function fetchMultipleAndDeserialize(
-    connection: Connection, 
-    programId: PublicKey,
-    name: string, 
-    initialByte?: string, 
-    customOffset?: number[],
-    customOffsetAddress?: (PublicKey | string)[],
-    accountSize?: number,
+export async function fetchMultipleByAddressAndDeserialize(
+    connection: Connection,
+    addresses: PublicKey[],
+    name: string,
     programType?: "chat" | "addin"
 ) {
-    const filters = [];
+  if (addresses.length > 100) throw Error("getMultipleAccounts has a maximum of 100 accounts.")
 
-    if (initialByte) {
-        filters.push(
-            {
-                memcmp: {
-                    offset: 0,
-                    bytes: initialByte
-                }
-            }
-        )
-    }
+  const accounts = await connection.getMultipleAccountsInfo(addresses);
 
-    if (customOffset && customOffsetAddress) {
-        customOffset.forEach((offset,index) => {
-            const offsetValue = customOffsetAddress[index]
+  if(accounts.length != addresses.length) throw Error("fetchMultipleByAddressAndDeserialize: accounts.length != addresses.length!")
 
-            filters.push({
-                memcmp: {
-                    offset,
-                    bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
-                }
-            })
-        })
-    }
-
-    if (accountSize) {
-        filters.push(
-            {
-                dataSize: accountSize
-              },
-        )
-    }
-
-    const accounts = await connection.getProgramAccounts(programId, {
-        filters
-    })
-
-    const deserializeAccounts = accounts.map(acc => {
-        if (acc.account.data) {
+  const deserializeAccounts = accounts.map((acc, index) => {
+      if (acc!= null && acc.data) {
             try {
                 return {
-                    ...deserialize(name, acc.account.data, acc.pubkey, programType), 
-                    balance: acc.account.lamports/LAMPORTS_PER_SOL
+                    ...deserialize(name, acc.data, addresses[index], programType),
+                    balance: acc.lamports/LAMPORTS_PER_SOL
                 }
             } catch {
                 return
@@ -96,62 +60,138 @@ export async function fetchMultipleAndDeserialize(
         } else {
             throw Error("The account doesn't exist.")
         }
-    })
+  })
 
-    return deserializeAccounts.filter(a => a !== undefined)
+  return deserializeAccounts.filter(a => a !== undefined)
 }
 
-export async function fetchMultipleAndNotDeserialize(
-    connection: Connection, 
+// export async function fetchMultipleAndNotDeserialize(
+//     connection: Connection,
+//     programId: PublicKey,
+//     name: string,
+//     initialByte?: string,
+//     customOffset?: number[],
+//     customOffsetAddress?: (PublicKey | string)[],
+//     accountSize?: number,
+//     programType?: "chat" | "addin"
+// ) {
+//     const filters = [];
+
+//     if (initialByte) {
+//         filters.push(
+//             {
+//                 memcmp: {
+//                     offset: 0,
+//                     bytes: initialByte
+//                 }
+//             }
+//         )
+//     }
+
+//     if (customOffset && customOffsetAddress) {
+//         customOffset.forEach((offset,index) => {
+//             const offsetValue = customOffsetAddress[index]
+
+//             filters.push({
+//                 memcmp: {
+//                     offset,
+//                     bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
+//                 }
+//             })
+//         })
+//     }
+
+//     if (accountSize) {
+//         filters.push(
+//             {
+//                 dataSize: accountSize
+//               },
+//         )
+//     }
+
+//     const accounts = await connection.getProgramAccounts(programId, {
+//         filters,
+//         dataSlice: {
+//             length: 0,
+//             offset: 0
+//         }
+//     })
+
+//     return accounts.map(acc => acc.pubkey)
+// }
+
+export async function fetchMultipleAccounts(
+    connection: Connection,
     programId: PublicKey,
-    name: string, 
-    initialByte?: string, 
-    customOffset?: number[],
-    customOffsetAddress?: (PublicKey | string)[],
-    accountSize?: number,
-    programType?: "chat" | "addin"
+    name: string,
+    options: {
+        initialByte?: string,
+        customOffset?: number[],
+        customOffsetAddress?: (PublicKey | string)[],
+        accountSize?: number,
+        programType?: "chat" | "addin",
+        deserialize?: boolean
+    } = { deserialize: true }
 ) {
     const filters = [];
 
-    if (initialByte) {
-        filters.push(
-            {
-                memcmp: {
-                    offset: 0,
-                    bytes: initialByte
-                }
+    if (options.initialByte) {
+        filters.push({
+            memcmp: {
+                offset: 0,
+                bytes: options.initialByte
             }
-        )
+        });
     }
 
-    if (customOffset && customOffsetAddress) {
-        customOffset.forEach((offset,index) => {
-            const offsetValue = customOffsetAddress[index]
-
+    if (options.customOffset && options.customOffsetAddress) {
+        options.customOffset.forEach((offset, index) => {
+            const offsetValue = options.customOffsetAddress![index];
             filters.push({
                 memcmp: {
                     offset,
                     bytes: typeof offsetValue === "string" ? offsetValue : offsetValue.toBase58()
                 }
-            })
-        })
+            });
+        });
     }
 
-    if (accountSize) {
-        filters.push(
-            {
-                dataSize: accountSize
-              },
-        )
+    if (options.accountSize) {
+        filters.push({
+            dataSize: options.accountSize
+        });
     }
 
-    const accounts = await connection.getProgramAccounts(programId, {
-        filters,
-        dataSlice: {
+    const getProgramAccountsConfig: any = { filters };
+
+    // Only add dataSlice if we don't need to deserialize
+    if (!options.deserialize) {
+        getProgramAccountsConfig.dataSlice = {
             length: 0,
             offset: 0
-        }
-    })
+        };
+    }
 
-    return accounts.map(acc => acc.pubkey)
+    const accounts = await connection.getProgramAccounts(programId, getProgramAccountsConfig);
+
+    if (!options.deserialize) {
+        return accounts.value.map(acc => acc.pubkey);
+    }
+
+    const deserializedAccounts = accounts.value.map(acc => {
+        if (acc.account.data) {
+            try {
+                return {
+                    ...deserialize(name, acc.account.data, acc.pubkey, options.programType),
+                    balance: acc.account.lamports/LAMPORTS_PER_SOL
+                };
+            } catch {
+                return undefined;
+            }
+        } else {
+            throw Error("The account doesn't exist.");
+        }
+    });
+
+    return deserializedAccounts.filter(a => a !== undefined);
 }
