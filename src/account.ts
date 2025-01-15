@@ -3,7 +3,7 @@ import chatIdl from "./idl/chat.json";
 import addinIdl from "./idl/addin.json";
 import {BorshAccountsCoder} from "@coral-xyz/anchor/dist/cjs/coder/borsh/accounts";
 import { GovernanceIdl, ChatIdl, AddinIdl } from "./idl/idl";
-import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Connection, GetProgramAccountsConfig, GetProgramAccountsFilter, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 export function deserialize(name: string, data: Buffer, pubkey: PublicKey, programType?: "chat" | "addin") {
     const coder = programType === "chat" ?
@@ -76,10 +76,12 @@ export async function fetchMultipleAccounts(
         customOffsetAddress?: (PublicKey | string)[],
         accountSize?: number,
         programType?: "chat" | "addin",
+        minSlot?: number,
         deserialize?: boolean
     } = { deserialize: true }
 ) {
-    const filters = [];
+
+  const filters: GetProgramAccountsFilter[] = [];
 
     if (options.initialByte) {
         filters.push({
@@ -108,7 +110,7 @@ export async function fetchMultipleAccounts(
         });
     }
 
-    const getProgramAccountsConfig: any = { filters };
+    const getProgramAccountsConfig: GetProgramAccountsConfig = { filters };
 
     // Only add dataSlice if we don't need to deserialize
     if (!options.deserialize) {
@@ -121,10 +123,10 @@ export async function fetchMultipleAccounts(
     const accounts = await connection.getProgramAccounts(programId, getProgramAccountsConfig);
 
     if (!options.deserialize) {
-        return accounts.value.map(acc => acc.pubkey);
+        return accounts.map(acc => acc.pubkey);
     }
 
-    const deserializedAccounts = accounts.value.map(acc => {
+    const deserializedAccounts = accounts.map(acc => {
         if (acc.account.data) {
             try {
                 return {
