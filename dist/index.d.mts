@@ -4829,15 +4829,6 @@ declare class PdaClient {
     };
 }
 
-interface Info {
-    name: string;
-    programType?: "chat" | "addin";
-    data: Buffer;
-    key: PublicKey;
-}
-type WithInfo<T> = T & {
-    info: Info;
-};
 type MintMaxVoteWeightSource = {
     type: "supplyFraction" | "absolute";
     amount: BN;
@@ -4873,25 +4864,25 @@ interface GovernanceConfig extends Omit<GovernanceConfigMut, 'minCommunityWeight
 }
 type MessageBody = IdlTypes<ChatIdl>["MessageBody"];
 type RealmsV2Account = IdlAccounts<GovernanceIdl>["realmV2"];
-interface RealmV2 extends WithInfo<RealmsV2Account> {
+interface RealmV2 extends RealmsV2Account {
     publicKey: PublicKey;
 }
-type RealmV1 = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["realmV1"]>;
-type RealmConfig = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["realmConfigAccount"]>;
-type TokenOwnerRecord = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["tokenOwnerRecordV2"]>;
-type GovernanceAccount = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["governanceV2"]>;
-type GovernanceV1 = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["governanceV1"]>;
-type ProposalV2 = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["proposalV2"]>;
-type ProposalV1 = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["proposalV1"]>;
-type ProposalDeposit = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["proposalDeposit"]>;
-type ProposalTransaction = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["proposalTransactionV2"]>;
-type ProposalInstruction = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["proposalInstructionV1"]>;
-type SignatoryRecord = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["signatoryRecordV2"]>;
-type VoteRecord = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"]>;
-type VoteRecordV1 = WithInfo<IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV1"]>;
-type ChatMessage = WithInfo<IdlAccountsWithPubkey<ChatIdl>["chatMessage"]>;
-type VoterWeightRecord = WithInfo<IdlAccountsWithPubkey<AddinIdl>["voterWeightRecord"]>;
-type MaxVoterWeightRecord = WithInfo<IdlAccountsWithPubkey<AddinIdl>["maxVoterWeightRecord"]>;
+type RealmV1 = IdlAccountsWithPubkey<GovernanceIdl>["realmV1"];
+type RealmConfig = IdlAccountsWithPubkey<GovernanceIdl>["realmConfigAccount"];
+type TokenOwnerRecord = IdlAccountsWithPubkey<GovernanceIdl>["tokenOwnerRecordV2"];
+type GovernanceAccount = IdlAccountsWithPubkey<GovernanceIdl>["governanceV2"];
+type GovernanceV1 = IdlAccountsWithPubkey<GovernanceIdl>["governanceV1"];
+type ProposalV2 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV2"];
+type ProposalV1 = IdlAccountsWithPubkey<GovernanceIdl>["proposalV1"];
+type ProposalDeposit = IdlAccountsWithPubkey<GovernanceIdl>["proposalDeposit"];
+type ProposalTransaction = IdlAccountsWithPubkey<GovernanceIdl>["proposalTransactionV2"];
+type ProposalInstruction = IdlAccountsWithPubkey<GovernanceIdl>["proposalInstructionV1"];
+type SignatoryRecord = IdlAccountsWithPubkey<GovernanceIdl>["signatoryRecordV2"];
+type VoteRecord = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV2"];
+type VoteRecordV1 = IdlAccountsWithPubkey<GovernanceIdl>["voteRecordV1"];
+type ChatMessage = IdlAccountsWithPubkey<ChatIdl>["chatMessage"];
+type VoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["voterWeightRecord"];
+type MaxVoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["maxVoterWeightRecord"];
 
 declare function deserialize(name: string, data: Buffer, pubkey: PublicKey, programType?: "chat" | "addin"): any;
 declare function fetchAndDeserialize(connection: Connection, pubkey: PublicKey, name: string, programType?: "chat" | "addin"): Promise<any>;
