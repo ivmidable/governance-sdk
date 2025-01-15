@@ -530,7 +530,7 @@ export class SplGovernance {
       * @returns Chat Message accounts
       */
      async getChatMessagesByAddress(chatMessageAddresses: PublicKey[]) : Promise<ChatMessage[]> {
-       return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, 'chatMessage')
+       return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, 'chatMessage', 'chat')
      }
 
 

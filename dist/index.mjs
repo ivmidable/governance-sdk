@@ -6100,7 +6100,7 @@ var SplGovernance = class {
    */
   getChatMessagesByAddress(chatMessageAddresses) {
     return __async(this, null, function* () {
-      return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, "chatMessage");
+      return fetchMultipleByAddressAndDeserialize(this.connection, chatMessageAddresses, "chatMessage", "chat");
     });
   }
   /** Get all Chat Messages
