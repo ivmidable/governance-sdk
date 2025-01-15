@@ -7,7 +7,7 @@ import { DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID } from "./constant";
 import { PdaClient } from "./pda";
 import { ChatMessage, GovernanceAccount, GovernanceConfig, GovernanceV1, MaxVoterWeightRecord, MintMaxVoteWeightSource, ProposalDeposit, ProposalInstruction, ProposalTransaction, ProposalV1, ProposalV2, RealmConfig, RealmConfigArgs, RealmV1, RealmV2, SignatoryRecord, TokenOwnerRecord, Vote, VoteRecord, VoteRecordV1, VoteType, VoterWeightRecord } from "./types";
 import * as govInstructions from "./instructions";
-import {fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize } from "./account";
+import {deserialize, fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize } from "./account";
 
 export class SplGovernance {
     readonly programId: PublicKey;
@@ -567,6 +567,7 @@ export class SplGovernance {
      async getMaxVoterWeightRecord(maxVoterWeightRecordAddress: PublicKey): Promise<MaxVoterWeightRecord> {
         return fetchAndDeserialize(this.connection, maxVoterWeightRecordAddress, "maxVoterWeightRecord", "addin")
     }
+
 
     /**
      * Construct a CreateRealm Instruction
@@ -1197,5 +1198,6 @@ export class SplGovernance {
     }
 }
 
+export * from './account';
 export * from "./types";
 export * from "./constant";

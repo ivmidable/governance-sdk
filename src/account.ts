@@ -29,7 +29,11 @@ export async function fetchAndDeserialize(
     const account = await connection.getAccountInfo(pubkey);
 
     if (account?.data) {
-        return {...deserialize(name, account.data, pubkey, programType), balance: account.lamports / LAMPORTS_PER_SOL};
+        return {
+          ...deserialize(name, account.data, pubkey, programType),
+          balance: account.lamports / LAMPORTS_PER_SOL,
+          info: {name, type:programType, key:pubkey, data: account.data}
+        };
     } else {
         throw Error("The account doesn't exist.");
     }
@@ -52,7 +56,8 @@ export async function fetchMultipleByAddressAndDeserialize(
             try {
                 return {
                     ...deserialize(name, acc.data, addresses[index], programType),
-                    balance: acc.lamports/LAMPORTS_PER_SOL
+                    balance: acc.lamports/LAMPORTS_PER_SOL,
+                    info: {name, type:programType, key:addresses[index], data: acc.data}
                 }
             } catch {
                 return
@@ -133,7 +138,8 @@ export async function fetchMultipleAccounts(
             try {
                 return {
                     ...deserialize(name, acc.account.data, acc.pubkey, options.programType),
-                    balance: acc.account.lamports/LAMPORTS_PER_SOL
+                    balance: acc.account.lamports/LAMPORTS_PER_SOL,
+                    info: {name, type:options.programType, key:acc.pubkey, data: acc.account.data}
                 };
             } catch {
                 return undefined;
