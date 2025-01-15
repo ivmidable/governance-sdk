@@ -4872,6 +4872,7 @@ type MessageBody = IdlTypes<ChatIdl>["MessageBody"];
 type RealmsV2Account = IdlAccounts<GovernanceIdl>["realmV2"];
 interface RealmV2 extends RealmsV2Account {
     publicKey: PublicKey;
+    info: Info;
 }
 type RealmV1 = IdlAccountsWithPubkey<GovernanceIdl>["realmV1"];
 type RealmConfig = IdlAccountsWithPubkey<GovernanceIdl>["realmConfigAccount"];
@@ -5563,4 +5564,4 @@ declare class SplGovernance {
     postMessageInstruction(messageBody: string, messageType: "text" | "reaction", isReply: boolean, chatMessageAccount: PublicKey, realmAccount: PublicKey, governanceAccount: PublicKey, proposalAccount: PublicKey, tokenOwnerRecord: PublicKey, governanceAuthority: PublicKey, payer: PublicKey, replyTo?: PublicKey, voterWeightRecord?: PublicKey): Promise<TransactionInstruction>;
 }
 
-export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalInstruction, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteRecordV1, type VoteType, type VoterWeightRecord, deserialize, fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize };
+export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type Info, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalInstruction, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteRecordV1, type VoteType, type VoterWeightRecord, deserialize, fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize };
