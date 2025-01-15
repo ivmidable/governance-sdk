@@ -5505,8 +5505,9 @@ function fetchMultipleByAddressAndDeserialize(connection, addresses, name, progr
     return deserializeAccounts.filter((a) => a !== void 0);
   });
 }
-function fetchMultipleAccounts(_0, _1, _2) {
-  return __async(this, arguments, function* (connection, programId, name, options = { deserialize: true }) {
+function fetchMultipleAccounts(connection, programId, name, options) {
+  return __async(this, null, function* () {
+    var _a;
     const filters = [];
     if (options.initialByte) {
       filters.push({
@@ -5533,6 +5534,7 @@ function fetchMultipleAccounts(_0, _1, _2) {
       });
     }
     const getProgramAccountsConfig = { filters };
+    (_a = options.deserialize) != null ? _a : options.deserialize = true;
     if (!options.deserialize) {
       getProgramAccountsConfig.dataSlice = {
         length: 0,
