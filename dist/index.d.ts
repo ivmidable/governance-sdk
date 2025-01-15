@@ -4884,6 +4884,19 @@ type ChatMessage = IdlAccountsWithPubkey<ChatIdl>["chatMessage"];
 type VoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["voterWeightRecord"];
 type MaxVoterWeightRecord = IdlAccountsWithPubkey<AddinIdl>["maxVoterWeightRecord"];
 
+declare function deserialize(name: string, data: Buffer, pubkey: PublicKey, programType?: "chat" | "addin"): any;
+declare function fetchAndDeserialize(connection: Connection, pubkey: PublicKey, name: string, programType?: "chat" | "addin"): Promise<any>;
+declare function fetchMultipleByAddressAndDeserialize(connection: Connection, addresses: PublicKey[], name: string, programType?: "chat" | "addin"): Promise<any[]>;
+declare function fetchMultipleAccounts(connection: Connection, programId: PublicKey, name: string, options: {
+    initialByte?: string;
+    customOffset?: number[];
+    customOffsetAddress?: (PublicKey | string)[];
+    accountSize?: number;
+    programType?: "chat" | "addin";
+    minSlot?: number;
+    deserialize?: boolean;
+}): Promise<any[]>;
+
 declare const DEFAULT_PROGRAM_ID: PublicKey;
 declare const DEFAULT_CHAT_PROGRAM_ID: PublicKey;
 
@@ -5544,4 +5557,4 @@ declare class SplGovernance {
     postMessageInstruction(messageBody: string, messageType: "text" | "reaction", isReply: boolean, chatMessageAccount: PublicKey, realmAccount: PublicKey, governanceAccount: PublicKey, proposalAccount: PublicKey, tokenOwnerRecord: PublicKey, governanceAuthority: PublicKey, payer: PublicKey, replyTo?: PublicKey, voterWeightRecord?: PublicKey): Promise<TransactionInstruction>;
 }
 
-export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalInstruction, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteRecordV1, type VoteType, type VoterWeightRecord };
+export { type ChatMessage, DEFAULT_CHAT_PROGRAM_ID, DEFAULT_PROGRAM_ID, type GovernanceAccount, type GovernanceConfig, type GovernanceConfigMut, type GovernanceV1, type InstructionData, type MaxVoterWeightRecord, type MessageBody, type MintMaxVoteWeightSource, type ProposalDeposit, type ProposalInstruction, type ProposalOption, type ProposalTransaction, type ProposalV1, type ProposalV2, type RealmConfig, type RealmConfigArgs, type RealmV1, type RealmV2, type SetRealmAuthorityAction, type SignatoryRecord, SplGovernance, type TokenOwnerRecord, type Vote, type VoteChoice, type VoteRecord, type VoteRecordV1, type VoteType, type VoterWeightRecord, deserialize, fetchAndDeserialize, fetchMultipleAccounts, fetchMultipleByAddressAndDeserialize };
