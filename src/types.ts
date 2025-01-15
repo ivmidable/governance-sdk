@@ -5,6 +5,12 @@ import { Idl, IdlTypeDef } from "@coral-xyz/anchor/dist/cjs/idl";
 import { TypeDef } from "@coral-xyz/anchor/dist/cjs/program/namespace/types";
 import { PublicKey } from "@solana/web3.js";
 
+export interface Info {
+    name: string;
+    programType?: "chat" | "addin",
+    data: Buffer;
+}
+
 // export type MintMaxVoteWeightSource = IdlTypes<GovernanceIdl>["MintMaxVoterWeightSource"];
 export type MintMaxVoteWeightSource = {
     type: "supplyFraction" | "absolute",
@@ -26,10 +32,11 @@ export type VoteType = {
 
 type TypeDefDictionary<T extends IdlTypeDef[], Defined> = {
     [K in T[number]["name"]]: TypeDef<T[number] & { name: K }, Defined> & {
-      publicKey: PublicKey;
+      publicKey: PublicKey,
+      info: Info
     };
 };
-  
+
 type IdlAccountsWithPubkey<I extends Idl> = TypeDefDictionary<
     NonNullable<I["accounts"]>,
     IdlTypes<I>
@@ -42,7 +49,7 @@ export type ProposalOption = IdlTypes<GovernanceIdl>["ProposalOption"];
 export type Vote = IdlTypes<GovernanceIdl>["Vote"];
 export type VoteChoice = IdlTypes<GovernanceIdl>["VoteChoice"];
 export type GovernanceConfigMut = IdlTypes<GovernanceIdl>["GovernanceConfig"];
-export interface GovernanceConfig extends 
+export interface GovernanceConfig extends
     Omit<GovernanceConfigMut, 'minCommunityWeightToCreateProposal' | 'minCouncilWeightToCreateProposal'> {
     minCommunityWeightToCreateProposal: BN | number,
     minCouncilWeightToCreateProposal: BN | number
@@ -51,7 +58,7 @@ export type MessageBody = IdlTypes<ChatIdl>["MessageBody"];
 
 type RealmsV2Account = IdlAccounts<GovernanceIdl>["realmV2"]
 
-export interface RealmV2 extends RealmsV2Account { publicKey: PublicKey};
+export interface RealmV2 extends RealmsV2Account { publicKey: PublicKey, info: Info };
 export type RealmV1 = IdlAccountsWithPubkey<GovernanceIdl>["realmV1"];
 export type RealmConfig = IdlAccountsWithPubkey<GovernanceIdl>["realmConfigAccount"];
 export type TokenOwnerRecord = IdlAccountsWithPubkey<GovernanceIdl>["tokenOwnerRecordV2"];

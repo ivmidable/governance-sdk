@@ -4829,6 +4829,11 @@ declare class PdaClient {
     };
 }
 
+interface Info {
+    name: string;
+    programType?: "chat" | "addin";
+    data: Buffer;
+}
 type MintMaxVoteWeightSource = {
     type: "supplyFraction" | "absolute";
     amount: BN;
@@ -4848,6 +4853,7 @@ type TypeDefDictionary<T extends IdlTypeDef[], Defined> = {
         name: K;
     }, Defined> & {
         publicKey: PublicKey;
+        info: Info;
     };
 };
 type IdlAccountsWithPubkey<I extends Idl> = TypeDefDictionary<NonNullable<I["accounts"]>, IdlTypes<I>>;

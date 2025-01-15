@@ -4,6 +4,7 @@ import addinIdl from "./idl/addin.json";
 import {BorshAccountsCoder} from "@coral-xyz/anchor/dist/cjs/coder/borsh/accounts";
 import { GovernanceIdl, ChatIdl, AddinIdl } from "./idl/idl";
 import { Connection, GetProgramAccountsConfig, GetProgramAccountsFilter, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { Info } from "./types";
 
 export function deserialize(name: string, data: Buffer, pubkey: PublicKey, programType?: "chat" | "addin") {
     const coder = programType === "chat" ?
@@ -16,7 +17,7 @@ export function deserialize(name: string, data: Buffer, pubkey: PublicKey, progr
     const modifiedData = Buffer.concat([Buffer.from("0".repeat(16), "hex"),data]);
     return {
         ...coder.decodeUnchecked(name, modifiedData),
-        publicKey: pubkey
+        publicKey: pubkey,
     }
 }
 
@@ -32,7 +33,7 @@ export async function fetchAndDeserialize(
         return {
           ...deserialize(name, account.data, pubkey, programType),
           balance: account.lamports / LAMPORTS_PER_SOL,
-          info: {name, type:programType, key:pubkey, data: account.data}
+          info: {name, programType, data: account.data} as Info
         };
     } else {
         throw Error("The account doesn't exist.");
@@ -57,7 +58,7 @@ export async function fetchMultipleByAddressAndDeserialize(
                 return {
                     ...deserialize(name, acc.data, addresses[index], programType),
                     balance: acc.lamports/LAMPORTS_PER_SOL,
-                    info: {name, type:programType, key:addresses[index], data: acc.data}
+                    info: {name, programType, data: acc.data} as Info
                 }
             } catch {
                 return
@@ -139,7 +140,7 @@ export async function fetchMultipleAccounts(
                 return {
                     ...deserialize(name, acc.account.data, acc.pubkey, options.programType),
                     balance: acc.account.lamports/LAMPORTS_PER_SOL,
-                    info: {name, type:options.programType, key:acc.pubkey, data: acc.account.data}
+                    info: {name, programType:options.programType, data: acc.account.data} as Info
                 };
             } catch {
                 return undefined;

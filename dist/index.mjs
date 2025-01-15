@@ -5480,7 +5480,7 @@ function fetchAndDeserialize(connection, pubkey, name, programType) {
     if (account == null ? void 0 : account.data) {
       return __spreadProps(__spreadValues({}, deserialize(name, account.data, pubkey, programType)), {
         balance: account.lamports / LAMPORTS_PER_SOL,
-        info: { name, type: programType, key: pubkey, data: account.data }
+        info: { name, programType, data: account.data }
       });
     } else {
       throw Error("The account doesn't exist.");
@@ -5497,7 +5497,7 @@ function fetchMultipleByAddressAndDeserialize(connection, addresses, name, progr
         try {
           return __spreadProps(__spreadValues({}, deserialize(name, acc.data, addresses[index], programType)), {
             balance: acc.lamports / LAMPORTS_PER_SOL,
-            info: { name, type: programType, key: addresses[index], data: acc.data }
+            info: { name, programType, data: acc.data }
           });
         } catch (e) {
           return;
@@ -5554,7 +5554,7 @@ function fetchMultipleAccounts(connection, programId, name, options) {
         try {
           return __spreadProps(__spreadValues({}, deserialize(name, acc.account.data, acc.pubkey, options.programType)), {
             balance: acc.account.lamports / LAMPORTS_PER_SOL,
-            info: { name, type: options.programType, key: acc.pubkey, data: acc.account.data }
+            info: { name, programType: options.programType, data: acc.account.data }
           });
         } catch (e) {
           return void 0;
