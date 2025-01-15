@@ -78,9 +78,8 @@ export async function fetchMultipleAccounts(
         programType?: "chat" | "addin",
         minSlot?: number,
         deserialize?: boolean
-    } = { deserialize: true }
+    }
 ) {
-
   const filters: GetProgramAccountsFilter[] = [];
 
     if (options.initialByte) {
@@ -111,6 +110,9 @@ export async function fetchMultipleAccounts(
     }
 
     const getProgramAccountsConfig: GetProgramAccountsConfig = { filters };
+
+    //if deserialize if null or undefined set it to true.
+    options.deserialize ??= true;
 
     // Only add dataSlice if we don't need to deserialize
     if (!options.deserialize) {
