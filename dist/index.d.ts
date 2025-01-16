@@ -4848,10 +4848,13 @@ type VoteType = {
     choiceType: "single" | "multi";
     multiChoiceOptions: multiChoiceOptionsType | null;
 };
+type ExcludeReserved<T> = {
+    [K in keyof T as K extends string ? K extends `reserved${string}` ? never : K : K]: T[K];
+};
 type TypeDefDictionary<T extends IdlTypeDef[], Defined> = {
-    [K in T[number]["name"]]: TypeDef<T[number] & {
+    [K in T[number]["name"]]: ExcludeReserved<TypeDef<T[number] & {
         name: K;
-    }, Defined> & {
+    }, Defined>> & {
         publicKey: PublicKey;
         info: Info;
     };
