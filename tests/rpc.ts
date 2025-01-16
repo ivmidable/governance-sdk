@@ -118,7 +118,7 @@ describe('Governance RPC', () => {
 
     describe.skip("Governance Account", () => {
         it("should fetch governance account from its public key", async() => {
-            const goveranceAccount = await govRpc.getGovernanceAccountByPubkey(governanceAddress)
+          const goveranceAccount = await govRpc.getGovernanceAccountByPubkey(governanceAddress)
             assert.equal(goveranceAccount.publicKey.toBase58(), governanceAddress.toBase58())
         })
 

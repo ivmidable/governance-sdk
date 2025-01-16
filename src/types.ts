@@ -30,10 +30,21 @@ export type VoteType = {
     multiChoiceOptions: multiChoiceOptionsType | null
 }
 
+// Utility type to exclude properties starting with "reserved"
+type ExcludeReserved<T> = {
+    [K in keyof T as K extends string
+        ? K extends `reserved${string}`
+            ? never
+            : K
+        : K
+    ]: T[K];
+};
+
+// Modified TypeDefDictionary to exclude reserved properties and include info
 type TypeDefDictionary<T extends IdlTypeDef[], Defined> = {
-    [K in T[number]["name"]]: TypeDef<T[number] & { name: K }, Defined> & {
-      publicKey: PublicKey,
-      info: Info
+    [K in T[number]["name"]]: ExcludeReserved<TypeDef<T[number] & { name: K }, Defined>> & {
+        publicKey: PublicKey;
+        info: Info;
     };
 };
 
